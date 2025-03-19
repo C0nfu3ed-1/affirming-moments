@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Heart, Instagram, Twitter, Facebook } from 'lucide-react';
 
