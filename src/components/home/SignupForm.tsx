@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { supabase } from '@/lib/supabase';
 import PersonalInfoStep from './signup/PersonalInfoStep';
 import DonationStep from './signup/DonationStep';
 import FormProgressBar from './signup/FormProgressBar';
@@ -19,6 +20,8 @@ interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
+  password?: string;
+  confirmPassword?: string;
 }
 
 const SignupForm = () => {
@@ -28,6 +31,8 @@ const SignupForm = () => {
     name: '',
     email: '',
     phone: '',
+    password: '',
+    confirmPassword: '',
     donation: false
   });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -73,6 +78,18 @@ const SignupForm = () => {
       newErrors.phone = "Invalid phone number format";
     }
     
+    // Validate password
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+    
+    // Validate confirm password
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -112,16 +129,31 @@ const SignupForm = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            phone: formData.phone
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
       if (formData.donation) {
         // Redirect to PayPal would happen here
         window.open('https://paypal.com', '_blank');
       }
+      
       toast({
         title: "Success!",
-        description: "You've been signed up for daily affirmations.",
+        description: data.user ? "You've been signed up for daily affirmations." : "Please check your email to confirm your registration.",
         variant: "default",
       });
       
@@ -130,6 +162,8 @@ const SignupForm = () => {
         name: '',
         email: '',
         phone: '',
+        password: '',
+        confirmPassword: '',
         donation: false
       });
       setErrors({});
@@ -138,7 +172,16 @@ const SignupForm = () => {
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
       }
-    }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Signup failed",
+        description: error.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
+      console.error("Signup error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
