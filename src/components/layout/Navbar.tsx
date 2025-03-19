@@ -1,13 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,7 +44,7 @@ const Navbar = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-6">
           <NavLinks />
-          <AuthButtons />
+          <AuthButtons isAuthenticated={isAuthenticated} onSignOut={signOut} />
         </nav>
 
         {/* Mobile Menu Button */}
@@ -67,7 +68,7 @@ const Navbar = () => {
         <div className="fixed inset-0 z-40 bg-white dark:bg-gray-950 pt-20 animate-fade-in">
           <div className="container mx-auto px-4 py-8 flex flex-col items-center gap-6">
             <NavLinks isMobile />
-            <AuthButtons isMobile />
+            <AuthButtons isAuthenticated={isAuthenticated} onSignOut={signOut} isMobile />
           </div>
         </div>
       )}
@@ -109,9 +110,37 @@ const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
   );
 };
 
-const AuthButtons = ({ isMobile = false }: { isMobile?: boolean }) => {
+const AuthButtons = ({ 
+  isAuthenticated, 
+  onSignOut, 
+  isMobile = false 
+}: { 
+  isAuthenticated: boolean;
+  onSignOut: () => Promise<void>;
+  isMobile?: boolean;
+}) => {
   const location = useLocation();
   const flexDirection = isMobile ? "flex-col w-full" : "flex-row";
+  
+  if (isAuthenticated) {
+    return (
+      <div className={`flex items-center gap-3 ${flexDirection}`}>
+        <Button 
+          variant="ghost" 
+          className={`text-gray-700 dark:text-gray-300 hover:text-primary-500 hover:bg-primary-50 ${isMobile ? 'w-full py-6' : ''}`}
+          onClick={onSignOut}
+        >
+          Sign Out
+        </Button>
+        <Button 
+          className={`bg-primary-600 hover:bg-primary-700 text-white ${isMobile ? 'w-full py-6' : ''}`}
+          asChild
+        >
+          <Link to="/member">Dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className={`flex items-center gap-3 ${flexDirection}`}>
