@@ -1,13 +1,13 @@
 
 import { Link } from 'react-router-dom';
-import { Heart, Instagram, Twitter, Facebook } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
 const Footer = () => {
   return (
     <footer className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-20">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="md:col-span-1">
             <Link to="/" className="text-2xl font-display font-bold text-primary-600 inline-block mb-4">
               Affirming Me Today
             </Link>
@@ -15,11 +15,6 @@ const Footer = () => {
               Daily affirmations to help you live a more positive, 
               empowered life. Start your journey to self-improvement today.
             </p>
-            <div className="flex space-x-4">
-              <SocialLink href="https://twitter.com" icon={<Twitter size={18} />} />
-              <SocialLink href="https://facebook.com" icon={<Facebook size={18} />} />
-              <SocialLink href="https://instagram.com" icon={<Instagram size={18} />} />
-            </div>
           </div>
           
           <div>
@@ -53,17 +48,6 @@ const Footer = () => {
     </footer>
   );
 };
-
-const SocialLink = ({ href, icon }: { href: string; icon: React.ReactNode }) => (
-  <a 
-    href={href} 
-    target="_blank" 
-    rel="noopener noreferrer" 
-    className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-700 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-primary-900 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-300"
-  >
-    {icon}
-  </a>
-);
 
 const FooterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <li>
