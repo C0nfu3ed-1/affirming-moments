@@ -6,8 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import Member from "./pages/Member";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -41,9 +42,18 @@ const AppRoutes = () => {
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/member" element={<Member />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/auth/:authType?" element={<Auth />} />
+        <Route path="/login" element={<Auth />} />
+        <Route path="/member" element={
+          <ProtectedRoute>
+            <Member />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute adminRequired={true}>
+            <Admin />
+          </ProtectedRoute>
+        } />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/faq" element={<FAQ />} />

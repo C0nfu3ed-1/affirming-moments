@@ -9,13 +9,167 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      affirmations: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          text: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          text: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          text?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      message_logs: {
+        Row: {
+          affirmation_id: string
+          details: string | null
+          id: string
+          status: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          affirmation_id: string
+          details?: string | null
+          id?: string
+          status: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          affirmation_id?: string
+          details?: string | null
+          id?: string
+          status?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_affirmation_id_fkey"
+            columns: ["affirmation_id"]
+            isOneToOne: false
+            referencedRelation: "affirmations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_admin: boolean
+          name: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          is_admin?: boolean
+          name: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_admin?: boolean
+          name?: string
+          phone?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          categories: string[]
+          created_at: string
+          id: string
+          is_active: boolean
+          time_preference: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categories?: string[]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          time_preference: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categories?: string[]
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          time_preference?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

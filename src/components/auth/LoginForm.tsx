@@ -12,17 +12,19 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { signIn } from '@/lib/auth';
+import { Link } from 'react-router-dom';
 
 const LoginForm = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -30,31 +32,40 @@ const LoginForm = () => {
       ...formData,
       [name]: value,
     });
+    setError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call - in real app would check with auth system
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const { user, error } = await signIn({
+        email: formData.email,
+        password: formData.password
+      });
       
-      // Mock admin check 
-      if (formData.email === 'admin@example.com') {
-        navigate('/admin');
+      if (error) {
+        setError(error.message);
+        console.error('Login error:', error);
+        setIsLoading(false);
         return;
       }
       
-      // All other users go to member page
-      navigate('/member');
-      
-      toast({
-        title: "Welcome back!",
-        description: "You've successfully signed in.",
-        variant: "default",
-      });
-    }, 1500);
+      if (user) {
+        // Check if user is admin and redirect accordingly
+        navigate('/member');
+        toast.success('Welcome back!', {
+          description: "You've successfully signed in.",
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error during login:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,6 +78,11 @@ const LoginForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 text-sm bg-red-50 border border-red-200 text-red-600 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -83,12 +99,12 @@ const LoginForm = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <a 
-                href="#" 
+              <Link 
+                to="/auth/reset-password" 
                 className="text-xs text-primary-600 hover:text-primary-800 transition-colors"
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
             <Input
               id="password"
@@ -119,12 +135,12 @@ const LoginForm = () => {
           </Button>
           <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             Don't have an account?{' '}
-            <a 
-              href="/" 
+            <Link 
+              to="/auth/signup" 
               className="text-primary-600 hover:text-primary-800 transition-colors"
             >
               Sign up now
-            </a>
+            </Link>
           </p>
         </CardFooter>
       </form>

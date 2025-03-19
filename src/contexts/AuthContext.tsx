@@ -1,8 +1,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -34,22 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        setSession(data.session);
-        setUser(data.session?.user || null);
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    // Listen for auth changes
+    // Set up auth state listener FIRST
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log(`Auth event: ${event}`);
@@ -58,6 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user || null);
+      setIsLoading(false);
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -71,10 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: null };
     } catch (error) {
       console.error('Error signing in:', error);
-      toast({
-        title: "Sign in failed",
+      toast.error('Sign in failed', {
         description: (error as AuthError).message || "Please check your credentials and try again.",
-        variant: "destructive",
       });
       return { error: error as AuthError };
     }
@@ -93,13 +83,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
       if (data.user) {
-        toast({
-          title: "Sign up successful!",
+        toast.success('Sign up successful!', {
           description: "Welcome to Affirming Me Today!",
         });
       } else {
-        toast({
-          title: "Email confirmation required",
+        toast.info('Email confirmation required', {
           description: "Please check your email to confirm your account.",
         });
       }
@@ -107,10 +95,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: null, user: data.user };
     } catch (error) {
       console.error('Error signing up:', error);
-      toast({
-        title: "Sign up failed",
+      toast.error('Sign up failed', {
         description: (error as AuthError).message || "There was an error creating your account.",
-        variant: "destructive",
       });
       return { error: error as AuthError, user: null };
     }
@@ -119,15 +105,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      toast({
-        title: "Signed out successfully",
-      });
+      toast.success('Signed out successfully');
     } catch (error) {
       console.error('Error signing out:', error);
-      toast({
-        title: "Sign out failed",
+      toast.error('Sign out failed', {
         description: "There was an error signing you out.",
-        variant: "destructive",
       });
     }
   };
@@ -135,23 +117,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       
       if (error) throw error;
       
-      toast({
-        title: "Password reset email sent",
+      toast.success('Password reset email sent', {
         description: "Please check your email for password reset instructions.",
       });
       
       return { error: null };
     } catch (error) {
       console.error('Error resetting password:', error);
-      toast({
-        title: "Password reset failed",
+      toast.error('Password reset failed', {
         description: (error as AuthError).message || "There was an error sending the reset email.",
-        variant: "destructive",
       });
       return { error: error as AuthError };
     }
