@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Loader2 } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const SignupForm = () => {
   const { toast } = useToast();
@@ -24,6 +25,8 @@ const SignupForm = () => {
     donation: false
   });
   const [step, setStep] = useState(1);
+  const [captchaValue, setCaptchaValue] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -37,8 +40,22 @@ const SignupForm = () => {
     setStep(nextStep);
   };
 
+  const handleCaptchaChange = (value: string | null) => {
+    setCaptchaValue(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!captchaValue) {
+      toast({
+        title: "Verification Required",
+        description: "Please complete the reCAPTCHA verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     // Simulate API call
@@ -53,6 +70,19 @@ const SignupForm = () => {
         description: "You've been signed up for daily affirmations.",
         variant: "default",
       });
+      
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        donation: false
+      });
+      setStep(1);
+      setCaptchaValue(null);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
     }, 1500);
   };
 
@@ -152,27 +182,41 @@ const SignupForm = () => {
                   </div>
                 </>
               ) : (
-                <div className="space-y-4 py-4">
-                  <div className="rounded-lg bg-primary-50 p-4 border border-primary-100">
-                    <h4 className="font-medium text-primary-800 mb-2">Support Our Mission</h4>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Your donation helps us provide affirmations to those who need them most but can't afford it.
-                    </p>
-                    <div className="flex items-center">
-                      <input
-                        id="donation"
-                        name="donation"
-                        type="checkbox"
-                        checked={formData.donation}
-                        onChange={handleChange}
-                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      />
-                      <label htmlFor="donation" className="ml-2 block text-sm text-gray-700">
-                        Yes, I'd like to donate through PayPal
-                      </label>
+                <>
+                  <div className="space-y-4 py-4">
+                    <div className="rounded-lg bg-primary-50 p-4 border border-primary-100">
+                      <h4 className="font-medium text-primary-800 mb-2">Support Our Mission</h4>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Your donation helps us provide affirmations to those who need them most but can't afford it.
+                      </p>
+                      <div className="flex items-center">
+                        <input
+                          id="donation"
+                          name="donation"
+                          type="checkbox"
+                          checked={formData.donation}
+                          onChange={handleChange}
+                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <label htmlFor="donation" className="ml-2 block text-sm text-gray-700">
+                          Yes, I'd like to donate through PayPal
+                        </label>
+                      </div>
                     </div>
                   </div>
-                </div>
+                  
+                  <div className="mt-6">
+                    <div className="mb-2 text-sm text-gray-600">Please verify you're human</div>
+                    <ReCAPTCHA
+                      ref={recaptchaRef}
+                      sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" // This is Google's test key, replace with your actual site key in production
+                      onChange={handleCaptchaChange}
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      This helps us prevent spam and automated signups.
+                    </p>
+                  </div>
+                </>
               )}
             </CardContent>
             <CardFooter>
@@ -198,7 +242,7 @@ const SignupForm = () => {
                   <Button
                     type="submit"
                     className="ml-auto bg-primary-600 hover:bg-primary-700 text-white"
-                    disabled={isLoading}
+                    disabled={isLoading || !captchaValue}
                   >
                     {isLoading ? (
                       <>
