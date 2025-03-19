@@ -53,7 +53,7 @@ export const useSignup = () => {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = async (): Promise<boolean> => {
     const newErrors: FormErrors = {};
     
     // Validate name
@@ -73,6 +73,21 @@ export const useSignup = () => {
       newErrors.phone = "Phone number is required";
     } else if (!/^\+?[0-9]{10,15}$/.test(formData.phone.replace(/[-()\s]/g, ''))) {
       newErrors.phone = "Invalid phone number format";
+    } else {
+      // Check if phone number already exists in the database
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('phone')
+        .eq('phone', formData.phone)
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error checking phone number:", error);
+      }
+      
+      if (data) {
+        newErrors.phone = "This phone number is already in use";
+      }
     }
     
     // Validate password
@@ -91,11 +106,14 @@ export const useSignup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const goToStep = (nextStep: number) => {
+  const goToStep = async (nextStep: number) => {
     if (nextStep > step) {
       // Only validate when moving forward
-      if (step === 1 && !validateForm()) {
-        return;
+      if (step === 1) {
+        const isValid = await validateForm();
+        if (!isValid) {
+          return;
+        }
       }
     }
     setStep(nextStep);
@@ -109,7 +127,8 @@ export const useSignup = () => {
     e.preventDefault();
     
     if (step === 1) {
-      if (validateForm()) {
+      const isValid = await validateForm();
+      if (isValid) {
         goToStep(2);
       }
       return;
