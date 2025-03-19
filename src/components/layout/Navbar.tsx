@@ -99,6 +99,12 @@ const NavLinks = ({ isMobile = false }: { isMobile?: boolean }) => {
       >
         About
       </Link>
+      <Link 
+        to="/faq" 
+        className={`${baseClasses} ${mobileClasses} ${isActive('/faq') ? activeClasses : inactiveClasses}`}
+      >
+        FAQ
+      </Link>
     </>
   );
 };

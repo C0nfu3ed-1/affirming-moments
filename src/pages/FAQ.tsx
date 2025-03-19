@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { QuestionCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { 
@@ -30,7 +30,7 @@ const FAQ = () => {
           variants={fadeIn}
         >
           <div className="text-center mb-10">
-            <QuestionCircle className="h-16 w-16 text-primary mx-auto mb-4" />
+            <HelpCircle className="h-16 w-16 text-primary mx-auto mb-4" />
             <h1 className="text-3xl md:text-4xl font-bold mb-3">Frequently Asked Questions</h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Find answers to common questions about our affirmation service and how it can help you on your journey to a more positive mindset.
