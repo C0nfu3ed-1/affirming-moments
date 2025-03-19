@@ -5,11 +5,9 @@ import {
   Clock, 
   Sparkles, 
   UserCheck, 
-  Heart, 
-  ArrowRight 
+  Heart
 } from 'lucide-react';
 import FeatureCard from '@/components/home/FeatureCard';
-import { Button } from '@/components/ui/button';
 
 const FeaturesSection: FC = () => {
   return (
@@ -57,18 +55,6 @@ const FeaturesSection: FC = () => {
             description="Support our mission to spread positivity with optional donations for those who can afford to help."
             delay={400}
           />
-          <div className="flex items-center justify-center p-6 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 animate-fade-in animation-delay-500">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-3">And Much More...</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Discover all the features designed to enhance your experience.
-              </p>
-              <Button variant="ghost" className="text-primary-600 group">
-                Learn more 
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
