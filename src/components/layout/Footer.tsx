@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Heart, Instagram, Twitter, Facebook } from 'lucide-react';
 
@@ -24,9 +25,9 @@ const Footer = () => {
           <div>
             <h3 className="font-display font-semibold text-lg mb-4">Resources</h3>
             <ul className="space-y-3">
+              <FooterLink href="/faq">FAQ</FooterLink>
               <FooterLink href="/privacy">Privacy Policy</FooterLink>
               <FooterLink href="/terms">Terms of Service</FooterLink>
-              <FooterLink href="/faq">FAQ</FooterLink>
             </ul>
           </div>
           

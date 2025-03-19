@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import FAQ from "./pages/FAQ";
 
 // Add framer-motion for animations
 import { AnimatePresence } from "framer-motion";
@@ -41,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/faq" element={<FAQ />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
