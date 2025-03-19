@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import {
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { signUp } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
 const SignupForm = () => {
   const navigate = useNavigate();
@@ -108,7 +108,19 @@ const SignupForm = () => {
         toast.success('Account created successfully!', {
           description: "Welcome to Affirming Me Today!",
         });
-        navigate('/member');
+        
+        // Check if the user is an admin and redirect accordingly
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileData?.is_admin) {
+          navigate('/admin');
+        } else {
+          navigate('/member');
+        }
       } else {
         toast.info('Account created!', {
           description: "Please check your email to confirm your registration.",

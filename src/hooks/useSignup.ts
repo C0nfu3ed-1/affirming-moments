@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import ReCAPTCHA from 'react-google-recaptcha';
+import { useNavigate } from 'react-router-dom';
 
 interface FormData {
   name: string;
@@ -23,6 +24,7 @@ interface FormErrors {
 
 export const useSignup = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -123,6 +125,27 @@ export const useSignup = () => {
     setCaptchaValue(value);
   };
 
+  // Check if user is admin
+  const checkIfAdmin = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error("Error checking admin status:", error);
+        return false;
+      }
+      
+      return data?.is_admin || false;
+    } catch (error) {
+      console.error("Error in checkIfAdmin:", error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -187,6 +210,16 @@ export const useSignup = () => {
       setCaptchaValue(null);
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
+      }
+      
+      // Redirect based on user role
+      if (data.user) {
+        const isUserAdmin = await checkIfAdmin(data.user.id);
+        if (isUserAdmin) {
+          navigate('/admin');
+        } else {
+          navigate('/member');
+        }
       }
     } catch (error: any) {
       toast({
