@@ -15,6 +15,12 @@ import DonationStep from './signup/DonationStep';
 import FormProgressBar from './signup/FormProgressBar';
 import FormActionButtons from './signup/FormActionButtons';
 
+interface FormErrors {
+  name?: string;
+  email?: string;
+  phone?: string;
+}
+
 const SignupForm = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +30,7 @@ const SignupForm = () => {
     phone: '',
     donation: false
   });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [step, setStep] = useState(1);
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
@@ -34,9 +41,49 @@ const SignupForm = () => {
       ...formData,
       [name]: type === 'checkbox' ? checked : value,
     });
+    
+    // Clear error when user types
+    if (errors[name as keyof FormErrors]) {
+      setErrors({
+        ...errors,
+        [name]: undefined
+      });
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    // Validate name
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    
+    // Validate email
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
+      newErrors.email = "Invalid email address";
+    }
+    
+    // Validate phone
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\+?[0-9]{10,15}$/.test(formData.phone.replace(/[-()\s]/g, ''))) {
+      newErrors.phone = "Invalid phone number format";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const goToStep = (nextStep: number) => {
+    if (nextStep > step) {
+      // Only validate when moving forward
+      if (step === 1 && !validateForm()) {
+        return;
+      }
+    }
     setStep(nextStep);
   };
 
@@ -46,6 +93,13 @@ const SignupForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (step === 1) {
+      if (validateForm()) {
+        goToStep(2);
+      }
+      return;
+    }
     
     if (!captchaValue) {
       toast({
@@ -78,6 +132,7 @@ const SignupForm = () => {
         phone: '',
         donation: false
       });
+      setErrors({});
       setStep(1);
       setCaptchaValue(null);
       if (recaptchaRef.current) {
@@ -114,7 +169,7 @@ const SignupForm = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {step === 1 ? (
-                <PersonalInfoStep formData={formData} handleChange={handleChange} />
+                <PersonalInfoStep formData={formData} handleChange={handleChange} errors={errors} />
               ) : (
                 <DonationStep 
                   formData={formData} 
