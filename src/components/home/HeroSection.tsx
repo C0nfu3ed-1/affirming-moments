@@ -43,8 +43,11 @@ const HeroSection = () => {
                 variant="outline" 
                 size="lg" 
                 className="rounded-full px-8 border-gray-300 hover:border-primary-500 hover:text-primary-600 transition-all duration-300"
+                asChild
               >
-                Learn More
+                <a href="#features">
+                  Learn More
+                </a>
               </Button>
             </div>
           </div>

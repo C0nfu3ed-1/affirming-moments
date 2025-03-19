@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 
 const FeaturesSection: FC = () => {
   return (
-    <section className="py-20 bg-gray-50 dark:bg-gray-900">
+    <section id="features" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="inline-block py-1 px-3 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-3">
