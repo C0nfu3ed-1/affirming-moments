@@ -4,8 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { useNavigate } from 'react-router-dom';
+import { useSignupForm } from './signup/useSignupForm';
+import { checkIfAdmin } from './signup/useUserRole';
 
-interface FormData {
+export interface FormData {
   name: string;
   email: string;
   phone: string;
@@ -14,7 +16,7 @@ interface FormData {
   donation: boolean;
 }
 
-interface FormErrors {
+export interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
@@ -26,124 +28,21 @@ export const useSignup = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    donation: false
-  });
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [step, setStep] = useState(1);
   const [captchaValue, setCaptchaValue] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
-    
-    // Clear error when user types
-    if (errors[name as keyof FormErrors]) {
-      setErrors({
-        ...errors,
-        [name]: undefined
-      });
-    }
-  };
-
-  const validateForm = async (): Promise<boolean> => {
-    const newErrors: FormErrors = {};
-    
-    // Validate name
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-    
-    // Validate email
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(formData.email)) {
-      newErrors.email = "Invalid email address";
-    }
-    
-    // Validate phone
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^\+?[0-9]{10,15}$/.test(formData.phone.replace(/[-()\s]/g, ''))) {
-      newErrors.phone = "Invalid phone number format";
-    } else {
-      // Check if phone number already exists in the database
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('phone')
-        .eq('phone', formData.phone)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error checking phone number:", error);
-      }
-      
-      if (data) {
-        newErrors.phone = "This phone number is already in use";
-      }
-    }
-    
-    // Validate password
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    
-    // Validate confirm password
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const goToStep = async (nextStep: number) => {
-    if (nextStep > step) {
-      // Only validate when moving forward
-      if (step === 1) {
-        const isValid = await validateForm();
-        if (!isValid) {
-          return;
-        }
-      }
-    }
-    setStep(nextStep);
-  };
+  
+  const {
+    formData,
+    errors,
+    step,
+    handleChange,
+    validateForm,
+    goToStep,
+    resetForm
+  } = useSignupForm();
 
   const handleCaptchaChange = (value: string | null) => {
     setCaptchaValue(value);
-  };
-
-  // Check if user is admin
-  const checkIfAdmin = async (userId: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error("Error checking admin status:", error);
-        return false;
-      }
-      
-      return data?.is_admin || false;
-    } catch (error) {
-      console.error("Error in checkIfAdmin:", error);
-      return false;
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,16 +96,7 @@ export const useSignup = () => {
       });
       
       // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        password: '',
-        confirmPassword: '',
-        donation: false
-      });
-      setErrors({});
-      setStep(1);
+      resetForm();
       setCaptchaValue(null);
       if (recaptchaRef.current) {
         recaptchaRef.current.reset();
