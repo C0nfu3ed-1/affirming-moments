@@ -18,6 +18,10 @@ export async function verifyJwtAndGetUser(jwt: string, supabase: any) {
     }
     
     console.log('User authenticated from JWT:', user.id);
+    
+    // Log the user object structure to see what we're working with
+    console.log('User object structure:', JSON.stringify(user, null, 2));
+    
     return user;
   } catch (error) {
     console.error('Error in verifyJwtAndGetUser:', error);
@@ -32,7 +36,8 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     const user = await verifyJwtAndGetUser(jwt, supabase);
     
     // Debug: Print user ID being checked
-    console.log('Checking admin status for user:', user.id);
+    console.log('Checking admin status for user ID:', user.id);
+    console.log('User ID type:', typeof user.id);
     
     // First, check RLS permissions by trying a simple query
     console.log('Testing database permissions on profiles table...');
@@ -61,12 +66,35 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     } else {
       console.log('All profiles in database:', allProfiles);
       console.log('Number of profiles in database:', allProfiles ? allProfiles.length : 0);
+      
+      // Check if user ID format matches any profile ID format
+      if (allProfiles && allProfiles.length > 0) {
+        console.log('Sample profile ID format:', allProfiles[0].id);
+        console.log('Sample profile ID type:', typeof allProfiles[0].id);
+        
+        // Check if the user ID matches any profile ID directly
+        const matchingProfiles = allProfiles.filter(profile => profile.id === user.id);
+        console.log('Direct ID matches found:', matchingProfiles.length);
+        
+        // Try different string transformations for IDs
+        console.log('Checking for differently formatted IDs...');
+        const lowerCaseId = user.id.toLowerCase();
+        const upperCaseId = user.id.toUpperCase();
+        
+        const lowerCaseMatches = allProfiles.filter(profile => 
+          profile.id && profile.id.toLowerCase() === lowerCaseId);
+        const upperCaseMatches = allProfiles.filter(profile => 
+          profile.id && profile.id.toUpperCase() === upperCaseId);
+          
+        console.log('Lowercase ID matches:', lowerCaseMatches.length);
+        console.log('Uppercase ID matches:', upperCaseMatches.length);
+      }
     }
     
     // First, check if the profile exists at all with a simple query to log information
     const { data: profileExists, error: existsError } = await supabase
       .from('profiles')
-      .select('id, name, email')
+      .select('id, name, email, is_admin')
       .eq('id', user.id);
     
     if (existsError) {
