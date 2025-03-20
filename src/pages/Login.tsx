@@ -1,10 +1,23 @@
 
 import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import LoginForm from '@/components/auth/LoginForm';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Login = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      navigate('/member');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
   // Scroll to top on page load
   useEffect(() => {
     window.scrollTo(0, 0);
