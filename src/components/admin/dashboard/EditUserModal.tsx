@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { AdminUser } from '@/hooks/useAdminUsers';
+import { DialogDescription } from '@/components/ui/dialog';
 
 // Form validation schema
 const editUserFormSchema = z.object({
@@ -96,6 +97,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
+          <DialogDescription>
+            Update user information and preferences
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
