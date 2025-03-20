@@ -13,9 +13,10 @@ export const useSendSms = () => {
     setIsLoading(true);
     
     try {
-      const { data: authData } = await supabase.auth.getSession();
+      // Get the current session to ensure we have a valid token
+      const { data: authData, error: authError } = await supabase.auth.getSession();
       
-      if (!authData.session) {
+      if (authError || !authData.session) {
         throw new Error('You must be logged in to send messages');
       }
       
@@ -35,11 +36,13 @@ export const useSendSms = () => {
         throw new Error('Only administrators can send test messages');
       }
       
+      // Call the Edge Function with proper headers
       const response = await supabase.functions.invoke('send-sms', {
-        body: { phoneNumber, message },
+        body: { phoneNumber, message }
       });
       
       if (response.error) {
+        console.error('Edge function error:', response.error);
         throw new Error(response.error.message || 'Failed to send SMS');
       }
       
