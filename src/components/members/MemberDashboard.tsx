@@ -7,6 +7,7 @@ import { AlertTriangle, Check, Clock, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CategorySelection from './CategorySelection';
 import TimeSelection from './TimeSelection';
+import SendTestSms from './SendTestSms';
 
 const MemberDashboard = () => {
   const navigate = useNavigate();
@@ -87,7 +88,7 @@ const MemberDashboard = () => {
         </CardContent>
       </Card>
       
-      {/* Donation Card - Moved up */}
+      {/* Donation Card */}
       <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-0 shadow-lg mb-8">
         <CardContent className="p-8">
           <div className="flex flex-col md:flex-row items-center justify-between">
@@ -140,6 +141,11 @@ const MemberDashboard = () => {
             />
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Test SMS Section */}
+      <div className="mb-8">
+        <SendTestSms />
       </div>
       
       {/* Save Button */}
