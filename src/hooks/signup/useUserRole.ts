@@ -6,6 +6,16 @@ export const checkIfAdmin = async (userId: string): Promise<boolean> => {
     console.log('Checking admin status for user ID:', userId);
     console.log('User ID type:', typeof userId);
     
+    // Check for whitespace and trim if necessary
+    const trimmedUserId = userId.trim();
+    if (trimmedUserId !== userId) {
+      console.log('Whitespace detected in user ID, trimmed from:', userId, 'to:', trimmedUserId);
+      userId = trimmedUserId;
+    }
+    
+    // Log the exact query we're about to make
+    console.log('Running query: SELECT is_admin FROM profiles WHERE id =', userId);
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('is_admin')
