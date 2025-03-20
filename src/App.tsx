@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +17,7 @@ import FAQ from "./pages/FAQ";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
+import ResetPassword from "./pages/ResetPassword";
 
 // Add framer-motion for animations
 import { AnimatePresence } from "framer-motion";
@@ -44,6 +44,7 @@ const AppRoutes = () => {
         <Route path="/" element={<Index />} />
         <Route path="/auth/:authType?" element={<Auth />} />
         <Route path="/login" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/member" element={
           <ProtectedRoute>
             <Member />
