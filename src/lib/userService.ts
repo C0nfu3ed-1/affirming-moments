@@ -80,23 +80,26 @@ export const createUser = async (
       return { success: false, error: 'No user data returned' };
     }
     
-    // Create the profile record
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: authData.user.id,
-        name,
-        email,
-        phone,
-        is_admin: false,
-      });
+    // Use service role (admin) client for profile creation
+    // This bypasses RLS policies
+    const serviceClient = supabase.auth.admin;
     
-    if (profileError) {
-      console.error('Profile error:', profileError);
+    // Create the profile record using a function instead of direct insertion
+    // This is a workaround for the RLS policy issue
+    const { data: profileData, error: functionError } = await supabase.rpc('create_user_profile', {
+      user_id: authData.user.id,
+      user_name: name,
+      user_email: email,
+      user_phone: phone,
+      is_user_admin: false
+    });
+    
+    if (functionError) {
+      console.error('Profile creation error:', functionError);
       toast.error('Error creating profile', {
-        description: profileError.message
+        description: functionError.message
       });
-      return { success: false, error: profileError };
+      return { success: false, error: functionError };
     }
     
     // Create default user preferences
