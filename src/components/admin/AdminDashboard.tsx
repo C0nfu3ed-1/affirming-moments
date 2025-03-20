@@ -13,9 +13,11 @@ import {
   Upload,
   Download,
   Plus,
-  Zap
+  Zap,
+  SendIcon
 } from 'lucide-react';
 import TestAffirmations from './TestAffirmations';
+import SendTestSms from './SendTestSms';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -120,6 +122,9 @@ const AdminDashboard = () => {
         <TabsContent value="content" className="space-y-4">
           {/* Test Affirmations Card */}
           <TestAffirmations />
+          
+          {/* Test SMS Card */}
+          <SendTestSms />
           
           {/* Content Management Card */}
           <Card>

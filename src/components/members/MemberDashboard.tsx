@@ -7,7 +7,6 @@ import { AlertTriangle, Check, Clock, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import CategorySelection from './CategorySelection';
 import TimeSelection from './TimeSelection';
-import SendTestSms from './SendTestSms';
 
 const MemberDashboard = () => {
   const navigate = useNavigate();
@@ -141,11 +140,6 @@ const MemberDashboard = () => {
             />
           </CardContent>
         </Card>
-      </div>
-      
-      {/* Test SMS Section */}
-      <div className="mb-8">
-        <SendTestSms />
       </div>
       
       {/* Save Button */}
