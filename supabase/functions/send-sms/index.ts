@@ -60,49 +60,59 @@ Deno.serve(async (req) => {
     return errorResponse('Method not allowed', 405);
   }
 
-  // Get the JWT token from the request
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    console.error('No Authorization header found');
-    return errorResponse('Missing authorization header', 401);
-  }
-
-  // Create a Supabase client
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-  const supabase = createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: {
-        Authorization: authHeader,
-      },
-    },
-  });
-
-  // Verify the user is authenticated
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    console.error('Authentication error:', userError);
-    return errorResponse('Unauthorized', 401);
-  }
-
-  // Verify the user is an admin
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single();
-    
-  if (profileError || !profile) {
-    console.error('Profile check error:', profileError);
-    return errorResponse('Unable to verify permissions', 403);
-  }
-  
-  if (!profile.is_admin) {
-    console.error('User not admin:', user.id);
-    return errorResponse('Only administrators can send test messages', 403);
-  }
-
   try {
+    // Get the JWT token from the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No Authorization header found');
+      return errorResponse('Missing authorization header', 401);
+    }
+
+    // Create a Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: {
+          Authorization: authHeader,
+        },
+      },
+    });
+
+    // Verify the user is authenticated
+    const { data, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Authentication error:', authError);
+      return errorResponse(`Authentication error: ${authError.message}`, 401);
+    }
+    
+    if (!data || !data.user) {
+      console.error('No user found in auth response');
+      return errorResponse('Unauthorized: No user found', 401);
+    }
+    
+    console.log('User authenticated:', data.user.id);
+
+    // Verify the user is an admin
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', data.user.id)
+      .single();
+      
+    if (profileError) {
+      console.error('Profile check error:', profileError);
+      return errorResponse(`Profile check error: ${profileError.message}`, 403);
+    }
+    
+    if (!profile || !profile.is_admin) {
+      console.error('User not admin:', data.user.id);
+      return errorResponse('Only administrators can send test messages', 403);
+    }
+    
+    console.log('Admin status verified for user:', data.user.id);
+
     // Parse request body
     const { phoneNumber, message } = await req.json();
 
@@ -154,7 +164,7 @@ Deno.serve(async (req) => {
     const { error: logError } = await supabase
       .from('message_logs')
       .insert({
-        user_id: user.id,
+        user_id: data.user.id,
         affirmation_id: 'manual-send', // For manual sends
         status: 'sent',
         details: JSON.stringify({

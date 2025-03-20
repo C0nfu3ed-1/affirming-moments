@@ -16,7 +16,13 @@ export const useSendSms = () => {
       // Get the current session to ensure we have a valid token
       const { data: authData, error: authError } = await supabase.auth.getSession();
       
-      if (authError || !authData.session) {
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw new Error('Authentication error: ' + authError.message);
+      }
+      
+      if (!authData.session) {
+        console.error('No session found');
         throw new Error('You must be logged in to send messages');
       }
       
@@ -27,14 +33,17 @@ export const useSendSms = () => {
         .eq('id', authData.session.user.id)
         .single();
         
-      if (profileError || !profile) {
-        throw new Error('Unable to verify permissions');
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Unable to verify permissions: ' + profileError.message);
       }
       
-      // Only allow admins to send test messages
-      if (!profile.is_admin) {
+      if (!profile || !profile.is_admin) {
+        console.error('User not admin:', authData.session.user.id);
         throw new Error('Only administrators can send test messages');
       }
+      
+      console.log('Calling edge function with auth token...');
       
       // Call the Edge Function with proper headers
       const response = await supabase.functions.invoke('send-sms', {
