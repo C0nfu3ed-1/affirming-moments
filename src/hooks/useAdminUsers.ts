@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -140,15 +141,53 @@ export const useAdminUsers = () => {
       // Update preferences if isActive or categories is provided
       if (data.isActive !== undefined || data.categories) {
         const prefData: { is_active?: boolean; categories?: string[] } = {};
-        if (data.isActive !== undefined) prefData.is_active = data.isActive;
-        if (data.categories) prefData.categories = data.categories;
+        
+        // Explicitly include isActive, even if it's false
+        if (data.isActive !== undefined) {
+          prefData.is_active = data.isActive;
+          console.log(`Setting is_active to ${data.isActive}`);
+        }
+        
+        if (data.categories) {
+          prefData.categories = data.categories;
+        }
         
         console.log('Updating preferences with:', prefData);
         
-        const { error: prefError } = await supabase
+        // First check if a preference record exists
+        const { data: existingPref, error: checkError } = await supabase
           .from('user_preferences')
-          .update(prefData)
-          .eq('user_id', id);
+          .select('*')
+          .eq('user_id', id)
+          .maybeSingle();
+        
+        if (checkError) {
+          console.error('Error checking for existing preferences:', checkError);
+          throw checkError;
+        }
+        
+        let prefError;
+        
+        if (existingPref) {
+          // Update existing preference
+          const { error } = await supabase
+            .from('user_preferences')
+            .update(prefData)
+            .eq('user_id', id);
+          
+          prefError = error;
+        } else {
+          // Create preference if it doesn't exist
+          const { error } = await supabase
+            .from('user_preferences')
+            .insert({
+              user_id: id,
+              ...prefData,
+              time_preference: 'morning', // Default value
+            });
+          
+          prefError = error;
+        }
         
         if (prefError) {
           console.error('Preferences update error:', prefError);
