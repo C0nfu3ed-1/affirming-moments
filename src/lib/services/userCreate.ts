@@ -19,7 +19,14 @@ export const createUser = async (
     const userId = crypto.randomUUID();
     
     // Create user profile using RPC function to bypass RLS
-    const { data, error: rpcError } = await supabase.rpc(
+    // Use explicit type parameters for the RPC function
+    const { data, error: rpcError } = await supabase.rpc<any, {
+      user_id: string;
+      user_name: string;
+      user_email: string;
+      user_phone: string;
+      is_user_admin: boolean;
+    }>(
       'create_user_profile',
       {
         user_id: userId,
@@ -27,7 +34,7 @@ export const createUser = async (
         user_email: userData.email,
         user_phone: userData.phone || '',
         is_user_admin: userData.isAdmin || false
-      } as any  // Use type assertion to bypass type checking for the RPC call
+      }
     );
     
     if (rpcError) throw rpcError;
@@ -42,7 +49,7 @@ export const createUser = async (
     if (fetchError) throw fetchError;
     
     // Create user preferences if categories are provided
-    if (userData.categories && userData.categories.length >.0) {
+    if (userData.categories && userData.categories.length > 0) {
       const { error: prefError } = await supabase
         .from('user_preferences')
         .insert({
