@@ -15,11 +15,14 @@ export const createUser = async (
   try {
     console.log('Creating user with data:', userData);
     
+    // Generate a UUID for the new user
+    const userId = crypto.randomUUID();
+    
     // Create user profile using RPC function to bypass RLS
     const { data, error: rpcError } = await supabase.rpc(
       'create_user_profile',
       {
-        user_id: crypto.randomUUID(), // Generate UUID for the new user
+        user_id: userId,
         user_name: userData.name,
         user_email: userData.email,
         user_phone: userData.phone || '',
