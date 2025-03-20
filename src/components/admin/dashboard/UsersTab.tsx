@@ -80,7 +80,6 @@ const UsersTab = () => {
           </div>
           <div className="divide-y">
             {loading ? (
-              // Loading skeletons
               Array(5).fill(null).map((_, i) => (
                 <div key={i} className="grid grid-cols-5 p-3 text-sm">
                   <div className="col-span-2">
