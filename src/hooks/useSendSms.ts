@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client'; // Updated import
+import { supabase } from '@/lib/supabase'; // Updated import path to match other files
 
 export const useSendSms = () => {
   const [isLoading, setIsLoading] = useState(false);

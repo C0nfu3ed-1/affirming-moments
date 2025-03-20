@@ -44,6 +44,17 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     console.log('User ID length:', user.id.length);
     console.log('User ID as JSON:', JSON.stringify(user.id));
     
+    // Check if the user ID exists in the database directly
+    const { count, error: countError } = await supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', user.id);
+      
+    console.log('Profile count for user ID:', count);
+    if (countError) {
+      console.error('Error checking profile count:', countError);
+    }
+    
     // Log the exact query we're about to make
     console.log(`Running query: SELECT is_admin FROM profiles WHERE id = '${user.id}'`);
     
