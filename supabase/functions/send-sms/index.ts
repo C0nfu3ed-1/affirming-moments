@@ -40,6 +40,8 @@ const successResponse = (data: any) => {
 };
 
 Deno.serve(async (req) => {
+  console.log('SMS Edge Function called');
+  
   // Handle CORS
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -71,7 +73,7 @@ Deno.serve(async (req) => {
       return errorResponse('Missing Supabase configuration', 500);
     }
 
-    // Create a Supabase client with the JWT from the request
+    // Get the Authorization header
     const authorization = req.headers.get('Authorization');
     console.log('Authorization header present:', !!authorization);
     
@@ -88,7 +90,16 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Parse request body
+    const { phoneNumber, message } = await req.json();
+
+    // Validate request data
+    if (!phoneNumber || !message) {
+      return errorResponse('Phone number and message are required');
+    }
+
     // Verify the user is authenticated
+    console.log('Verifying user authentication...');
     const { data: userData, error: authError } = await supabase.auth.getUser();
     
     if (authError) {
@@ -104,6 +115,7 @@ Deno.serve(async (req) => {
     console.log('User authenticated:', userData.user.id);
 
     // Verify the user is an admin
+    console.log('Checking admin status...');
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -121,14 +133,6 @@ Deno.serve(async (req) => {
     }
     
     console.log('Admin status verified for user:', userData.user.id);
-
-    // Parse request body
-    const { phoneNumber, message } = await req.json();
-
-    // Validate request data
-    if (!phoneNumber || !message) {
-      return errorResponse('Phone number and message are required');
-    }
 
     // Format phone number if needed
     let formattedPhoneNumber = phoneNumber;
