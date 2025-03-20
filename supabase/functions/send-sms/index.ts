@@ -61,44 +61,53 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get the JWT token from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.error('No Authorization header found');
+    // Get the Supabase URL and key from environment
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    console.log('Supabase URL and key available:', !!supabaseUrl && !!supabaseAnonKey);
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return errorResponse('Missing Supabase configuration', 500);
+    }
+
+    // Create a Supabase client with the JWT from the request
+    const authorization = req.headers.get('Authorization');
+    console.log('Authorization header present:', !!authorization);
+    
+    if (!authorization) {
       return errorResponse('Missing authorization header', 401);
     }
 
-    // Create a Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    // Create a client with the JWT token
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
-          Authorization: authHeader,
-        },
-      },
+          Authorization: authorization
+        }
+      }
     });
 
     // Verify the user is authenticated
-    const { data, error: authError } = await supabase.auth.getUser();
+    const { data: userData, error: authError } = await supabase.auth.getUser();
     
     if (authError) {
       console.error('Authentication error:', authError);
       return errorResponse(`Authentication error: ${authError.message}`, 401);
     }
     
-    if (!data || !data.user) {
-      console.error('No user found in auth response');
+    if (!userData?.user) {
+      console.error('No user data found');
       return errorResponse('Unauthorized: No user found', 401);
     }
     
-    console.log('User authenticated:', data.user.id);
+    console.log('User authenticated:', userData.user.id);
 
     // Verify the user is an admin
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
-      .eq('id', data.user.id)
+      .eq('id', userData.user.id)
       .single();
       
     if (profileError) {
@@ -107,11 +116,11 @@ Deno.serve(async (req) => {
     }
     
     if (!profile || !profile.is_admin) {
-      console.error('User not admin:', data.user.id);
+      console.error('User not admin:', userData.user.id);
       return errorResponse('Only administrators can send test messages', 403);
     }
     
-    console.log('Admin status verified for user:', data.user.id);
+    console.log('Admin status verified for user:', userData.user.id);
 
     // Parse request body
     const { phoneNumber, message } = await req.json();
@@ -164,7 +173,7 @@ Deno.serve(async (req) => {
     const { error: logError } = await supabase
       .from('message_logs')
       .insert({
-        user_id: data.user.id,
+        user_id: userData.user.id,
         affirmation_id: 'manual-send', // For manual sends
         status: 'sent',
         details: JSON.stringify({

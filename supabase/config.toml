@@ -11,7 +11,7 @@ port = 54322
 
 [functions]
 [functions.send-sms]
-verify_jwt = true
+verify_jwt = false
 
 [functions.send-affirmation]
 verify_jwt = true

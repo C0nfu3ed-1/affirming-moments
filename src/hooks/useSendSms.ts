@@ -14,14 +14,14 @@ export const useSendSms = () => {
     
     try {
       // Get the current session to ensure we have a valid token
-      const { data: authData, error: authError } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
-      if (authError) {
-        console.error('Auth error:', authError);
-        throw new Error('Authentication error: ' + authError.message);
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+        throw new Error('Authentication error: ' + sessionError.message);
       }
       
-      if (!authData.session) {
+      if (!sessionData.session) {
         console.error('No session found');
         throw new Error('You must be logged in to send messages');
       }
@@ -30,7 +30,7 @@ export const useSendSms = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('id', authData.session.user.id)
+        .eq('id', sessionData.session.user.id)
         .single();
         
       if (profileError) {
@@ -39,20 +39,20 @@ export const useSendSms = () => {
       }
       
       if (!profile || !profile.is_admin) {
-        console.error('User not admin:', authData.session.user.id);
+        console.error('User not admin:', sessionData.session.user.id);
         throw new Error('Only administrators can send test messages');
       }
       
       console.log('Calling edge function with auth token...');
       
       // Call the Edge Function with proper headers
-      const response = await supabase.functions.invoke('send-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: { phoneNumber, message }
       });
       
-      if (response.error) {
-        console.error('Edge function error:', response.error);
-        throw new Error(response.error.message || 'Failed to send SMS');
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to send SMS');
       }
       
       toast.success('Message sent successfully!');
@@ -70,9 +70,9 @@ export const useSendSms = () => {
     setIsLoading(true);
     
     try {
-      const { data: authData } = await supabase.auth.getSession();
+      const { data: sessionData } = await supabase.auth.getSession();
       
-      if (!authData.session) {
+      if (!sessionData.session) {
         throw new Error('You must be logged in to send affirmations');
       }
       
@@ -80,7 +80,7 @@ export const useSendSms = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
-        .eq('id', authData.session.user.id)
+        .eq('id', sessionData.session.user.id)
         .single();
         
       if (profileError || !profile) {
@@ -92,12 +92,12 @@ export const useSendSms = () => {
         throw new Error('Only administrators can send affirmations manually');
       }
       
-      const response = await supabase.functions.invoke('send-affirmation', {
+      const { error } = await supabase.functions.invoke('send-affirmation', {
         body: { userId, affirmationId },
       });
       
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to send affirmation');
+      if (error) {
+        throw new Error(error.message || 'Failed to send affirmation');
       }
       
       toast.success('Affirmation sent successfully!');
