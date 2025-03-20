@@ -6,6 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 export const useSendSms = () => {
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * Send a test SMS - only available to admin users
+   */
   const sendSms = async (phoneNumber: string, message: string) => {
     setIsLoading(true);
     
@@ -14,6 +17,22 @@ export const useSendSms = () => {
       
       if (!authData.session) {
         throw new Error('You must be logged in to send messages');
+      }
+      
+      // Get user profile to check if admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', authData.session.user.id)
+        .single();
+        
+      if (profileError || !profile) {
+        throw new Error('Unable to verify permissions');
+      }
+      
+      // Only allow admins to send test messages
+      if (!profile.is_admin) {
+        throw new Error('Only administrators can send test messages');
       }
       
       const response = await supabase.functions.invoke('send-sms', {
@@ -43,6 +62,22 @@ export const useSendSms = () => {
       
       if (!authData.session) {
         throw new Error('You must be logged in to send affirmations');
+      }
+      
+      // Get user profile to check if admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', authData.session.user.id)
+        .single();
+        
+      if (profileError || !profile) {
+        throw new Error('Unable to verify permissions');
+      }
+      
+      // Only allow admins to send affirmations manually
+      if (!profile.is_admin) {
+        throw new Error('Only administrators can send affirmations manually');
       }
       
       const response = await supabase.functions.invoke('send-affirmation', {
