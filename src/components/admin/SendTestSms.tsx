@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,38 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Loader2, SendIcon } from 'lucide-react';
 import { useSendSms } from '@/hooks/useSendSms';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 const SendTestSms = () => {
   const { user } = useAuth();
   const { sendSms, isLoading } = useSendSms();
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || '');
   const [message, setMessage] = useState('This is a test affirmation message from Affirming Me Today!');
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  // Check if the current user is an admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-        
-      if (!error && data) {
-        setIsAdmin(data.is_admin);
-      }
-    };
-    
-    checkAdmin();
-  }, [user]);
-
-  // If user is not an admin, don't render this component
-  if (!isAdmin) {
-    return null;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -7,7 +7,7 @@ import SendTestSms from '../SendTestSms';
 
 const ContentTab = () => {
   return (
-    <>
+    <div className="space-y-6">
       {/* Test Affirmations Card */}
       <TestAffirmations />
       
@@ -52,7 +52,7 @@ const ContentTab = () => {
           </div>
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 };
 
