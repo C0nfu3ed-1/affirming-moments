@@ -18,6 +18,7 @@ export async function verifyJwtAndGetUser(jwt: string, supabase: any) {
     }
     
     console.log('User authenticated from JWT:', user.id);
+    console.log('Raw user ID value:', `id: ${user.id}`);
     
     // Log the user object structure to see what we're working with
     console.log('User object structure:', JSON.stringify(user, null, 2));
@@ -35,8 +36,9 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Get user from JWT
     const user = await verifyJwtAndGetUser(jwt, supabase);
     
-    // Debug: Print user ID being checked
-    console.log('Checking admin status for user ID:', user.id);
+    // Debug: Print user ID being checked with specific format for debugging
+    console.log(`id: ${user.id}`);
+    console.log(`user.id: ${user.id}`);
     console.log('User ID type:', typeof user.id);
     
     // First, check RLS permissions by trying a simple query
