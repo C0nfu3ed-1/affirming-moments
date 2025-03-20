@@ -8,7 +8,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -22,7 +23,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { AdminUser } from '@/hooks/useAdminUsers';
-import { DialogDescription } from '@/components/ui/dialog';
 
 // Form validation schema
 const editUserFormSchema = z.object({
@@ -55,10 +55,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   const form = useForm<EditUserFormValues>({
     resolver: zodResolver(editUserFormSchema),
     defaultValues: {
-      name: user?.name || '',
-      email: user?.email || '',
-      isActive: user?.isActive || false,
-      categories: user?.categories.join(', ') || ''
+      name: '',
+      email: '',
+      isActive: false,
+      categories: ''
     }
   });
 

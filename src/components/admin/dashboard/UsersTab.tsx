@@ -34,6 +34,7 @@ const UsersTab = () => {
     isActive: boolean;
     categories: string[];
   }) => {
+    console.log('Submitting user edit with values:', values);
     const success = await updateUser(id, values);
     if (success) {
       setEditUserOpen(false);

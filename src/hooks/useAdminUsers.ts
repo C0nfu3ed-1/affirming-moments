@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -117,18 +116,25 @@ export const useAdminUsers = () => {
     categories?: string[];
   }) => {
     try {
+      console.log('Updating user with data:', data);
+      
       // Update profile data if name or email is provided
       if (data.name || data.email) {
         const profileData: { name?: string; email?: string } = {};
         if (data.name) profileData.name = data.name;
         if (data.email) profileData.email = data.email;
         
+        console.log('Updating profile with:', profileData);
+        
         const { error: profileError } = await supabase
           .from('profiles')
           .update(profileData)
           .eq('id', id);
         
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error('Profile update error:', profileError);
+          throw profileError;
+        }
       }
       
       // Update preferences if isActive or categories is provided
@@ -137,12 +143,17 @@ export const useAdminUsers = () => {
         if (data.isActive !== undefined) prefData.is_active = data.isActive;
         if (data.categories) prefData.categories = data.categories;
         
+        console.log('Updating preferences with:', prefData);
+        
         const { error: prefError } = await supabase
           .from('user_preferences')
           .update(prefData)
           .eq('user_id', id);
         
-        if (prefError) throw prefError;
+        if (prefError) {
+          console.error('Preferences update error:', prefError);
+          throw prefError;
+        }
       }
       
       toast.success('User updated successfully');
