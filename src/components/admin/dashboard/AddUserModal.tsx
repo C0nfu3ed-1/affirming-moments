@@ -21,9 +21,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 
 // Updated email validation pattern
-const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 // Form validation schema with improved email validation
 const userFormSchema = z.object({
@@ -48,6 +49,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
   onOpenChange,
   onSubmit
 }) => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -59,11 +62,13 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
   });
 
   const handleSubmit = async (values: UserFormValues) => {
+    setErrorMessage(null);
     try {
       await onSubmit(values);
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in form submission:', error);
+      setErrorMessage(error?.message || 'Failed to add user');
     }
   };
 
@@ -78,6 +83,12 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {errorMessage && (
+              <div className="p-3 text-sm bg-red-50 border border-red-200 text-red-600 rounded-md">
+                {errorMessage}
+              </div>
+            )}
+            
             <FormField
               control={form.control}
               name="name"

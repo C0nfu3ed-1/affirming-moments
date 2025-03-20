@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AdminUser } from '@/hooks/useAdminUsers';
@@ -47,16 +46,36 @@ export const createUser = async (
   password: string
 ): Promise<{ success: boolean; error?: any }> => {
   try {
+    // Check for valid email format explicitly
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Invalid email format');
+      return { success: false, error: 'Invalid email format' };
+    }
+    
     // Sign up the new user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          name,
+          phone
+        }
+      }
     });
     
-    if (authError) throw authError;
+    if (authError) {
+      console.error('Auth error:', authError);
+      toast.error('Failed to add user', {
+        description: authError.message
+      });
+      return { success: false, error: authError };
+    }
     
     if (!authData.user) {
-      throw new Error('Failed to create user');
+      toast.error('Failed to create user');
+      return { success: false, error: 'No user data returned' };
     }
     
     // Create the profile record
@@ -70,7 +89,13 @@ export const createUser = async (
         is_admin: false,
       });
     
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Profile error:', profileError);
+      toast.error('Error creating profile', {
+        description: profileError.message
+      });
+      return { success: false, error: profileError };
+    }
     
     // Create default user preferences
     const { error: prefError } = await supabase
@@ -82,7 +107,13 @@ export const createUser = async (
         is_active: true,
       });
     
-    if (prefError) throw prefError;
+    if (prefError) {
+      console.error('Preferences error:', prefError);
+      toast.error('Error creating user preferences', {
+        description: prefError.message
+      });
+      return { success: false, error: prefError };
+    }
     
     toast.success('User added successfully');
     return { success: true };
