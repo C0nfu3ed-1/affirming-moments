@@ -32,6 +32,9 @@ const DeleteUserDialog: React.FC<DeleteUserDialogProps> = ({
     setIsDeleting(true);
     try {
       await onConfirm();
+      onOpenChange(false); // Close the dialog on success
+    } catch (error) {
+      console.error('Error in delete confirmation:', error);
     } finally {
       setIsDeleting(false);
     }

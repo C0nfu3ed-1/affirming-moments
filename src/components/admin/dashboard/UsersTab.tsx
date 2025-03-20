@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,11 +53,21 @@ const UsersTab = () => {
   };
   
   const handleDeleteUser = async () => {
+    console.log('Attempting to delete user:', selectedUser);
     if (selectedUser) {
-      const success = await deleteUser(selectedUser.id);
-      if (success) {
-        setDeleteUserOpen(false);
-        setSelectedUser(null);
+      try {
+        const success = await deleteUser(selectedUser.id);
+        console.log('Delete result:', success);
+        if (success) {
+          setDeleteUserOpen(false);
+          setSelectedUser(null);
+          toast.success(`User ${selectedUser.name} deleted successfully`);
+        } else {
+          toast.error('Failed to delete user');
+        }
+      } catch (error) {
+        console.error('Error in delete handler:', error);
+        toast.error('An error occurred while deleting the user');
       }
     }
   };
