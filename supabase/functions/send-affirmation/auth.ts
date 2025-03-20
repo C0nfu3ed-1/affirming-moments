@@ -18,10 +18,6 @@ export async function verifyJwtAndGetUser(jwt: string, supabase: any) {
     }
     
     console.log('User authenticated from JWT:', user.id);
-    console.log('Raw user ID value:', `id: ${user.id}`);
-    
-    // Log the user object structure to see what we're working with
-    console.log('User object structure:', JSON.stringify(user, null, 2));
     
     return user;
   } catch (error) {

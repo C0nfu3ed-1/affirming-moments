@@ -31,8 +31,10 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Get user from JWT
     const user = await verifyJwtAndGetUser(jwt, supabase);
     
-    // Verify the user is an admin
-    console.log('Checking admin status for user:', user.id);
+    // Debug: Print user ID being checked with specific format for debugging
+    console.log(`id: ${user.id}`);
+    console.log(`user.id: ${user.id}`);
+    console.log('User ID type:', typeof user.id);
     
     // Debug: Let's print out what we're querying
     console.log(`Querying profiles table for id = ${user.id}`);
