@@ -8,7 +8,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -21,10 +22,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-// Form validation schema
+// Updated email validation pattern
+const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+
+// Form validation schema with improved email validation
 const userFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
+  email: z.string()
+    .min(1, 'Email is required')
+    .regex(EMAIL_REGEX, 'Invalid email format'),
   phone: z.string().min(10, 'Phone number must be at least 10 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters')
 });
@@ -53,8 +59,12 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
   });
 
   const handleSubmit = async (values: UserFormValues) => {
-    await onSubmit(values);
-    form.reset();
+    try {
+      await onSubmit(values);
+      form.reset();
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    }
   };
 
   return (
@@ -62,6 +72,9 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
+          <DialogDescription>
+            Create a new user account. The email must be a valid format.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
