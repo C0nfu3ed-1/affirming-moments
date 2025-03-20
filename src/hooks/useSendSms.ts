@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,25 +28,6 @@ export const useSendSms = () => {
       // Extract the JWT token
       const jwt = sessionData.session.access_token;
       console.log('JWT token available:', !!jwt);
-      
-      // Get user profile to check if admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', sessionData.session.user.id)
-        .single();
-        
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        throw new Error('Unable to verify permissions: ' + profileError.message);
-      }
-      
-      if (!profile || !profile.is_admin) {
-        console.error('User not admin:', sessionData.session.user.id);
-        throw new Error('Only administrators can send test messages');
-      }
-      
-      console.log('Calling edge function with JWT token...');
       
       // Call the Edge Function with proper JWT token in headers
       const { data, error } = await supabase.functions.invoke('send-sms', {

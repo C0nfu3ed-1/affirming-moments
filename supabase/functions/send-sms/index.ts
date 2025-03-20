@@ -66,58 +66,75 @@ function validateEnvironment() {
   };
 }
 
-// Create Supabase client with JWT token
-function createSupabaseClient(supabaseUrl: string, supabaseAnonKey: string, jwt: string) {
+// Create Supabase client with admin key
+function createSupabaseClient(supabaseUrl: string, supabaseAnonKey: string) {
   return createClient(
     supabaseUrl,
     supabaseAnonKey,
     {
-      global: {
-        headers: {
-          Authorization: `Bearer ${jwt}`
-        }
+      auth: {
+        persistSession: false,
       }
     }
   );
 }
 
-// Verify user is authenticated and is an admin
-async function verifyAdminUser(supabase: any) {
-  console.log('Verifying user authentication with JWT...');
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  
-  if (authError) {
-    console.error('Authentication error:', authError);
-    throw new Error(`Authentication error: ${authError.message}`);
-  }
-  
-  if (!userData?.user) {
-    console.error('No user data found');
-    throw new Error('Unauthorized: No user found');
-  }
-  
-  console.log('User authenticated:', userData.user.id);
-
-  // Verify the user is an admin
-  console.log('Checking admin status...');
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', userData.user.id)
-    .single();
+// Verify JWT and get user from it
+async function verifyJwtAndGetUser(jwt: string, supabase: any) {
+  try {
+    console.log('Verifying JWT and getting user...');
     
-  if (profileError) {
-    console.error('Profile check error:', profileError);
-    throw new Error(`Profile check error: ${profileError.message}`);
+    // Verify the JWT
+    const { data: { user }, error } = await supabase.auth.getUser(jwt);
+    
+    if (error) {
+      console.error('JWT verification error:', error);
+      throw new Error(`Authentication error: ${error.message}`);
+    }
+    
+    if (!user) {
+      console.error('No user found from JWT');
+      throw new Error('Unauthorized: No user found');
+    }
+    
+    console.log('User authenticated from JWT:', user.id);
+    return user;
+  } catch (error) {
+    console.error('Error in verifyJwtAndGetUser:', error);
+    throw error;
   }
-  
-  if (!profile || !profile.is_admin) {
-    console.error('User not admin:', userData.user.id);
-    throw new Error('Only administrators can send test messages');
+}
+
+// Verify user is an admin
+async function verifyAdminUser(jwt: string, supabase: any) {
+  try {
+    // Get user from JWT
+    const user = await verifyJwtAndGetUser(jwt, supabase);
+    
+    // Verify the user is an admin
+    console.log('Checking admin status for user:', user.id);
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+      
+    if (profileError) {
+      console.error('Profile check error:', profileError);
+      throw new Error(`Profile check error: ${profileError.message}`);
+    }
+    
+    if (!profile || !profile.is_admin) {
+      console.error('User not admin:', user.id);
+      throw new Error('Only administrators can send test messages');
+    }
+    
+    console.log('Admin status verified for user:', user.id);
+    return user.id;
+  } catch (error) {
+    console.error('Error in verifyAdminUser:', error);
+    throw error;
   }
-  
-  console.log('Admin status verified for user:', userData.user.id);
-  return userData.user.id;
 }
 
 // Format phone number
@@ -187,6 +204,21 @@ async function logMessageToDb(supabase: any, userId: string, phoneNumber: string
   }
 }
 
+// Extract JWT token from request
+function extractJwtToken(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    throw new Error('Missing Authorization header');
+  }
+  
+  const jwt = authHeader.replace('Bearer ', '');
+  if (!jwt) {
+    throw new Error('Invalid JWT token format');
+  }
+  
+  return jwt;
+}
+
 // Main handler function
 Deno.serve(async (req) => {
   console.log('SMS Edge Function called');
@@ -201,22 +233,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Get JWT token from the request
-    const jwt = req.headers.get('Authorization')?.replace('Bearer ', '');
-    console.log('JWT token present:', !!jwt);
-    
-    if (!jwt) {
-      return errorResponse('Missing JWT token', 401);
-    }
-
     // Validate environment variables
     const envVars = validateEnvironment();
+    
+    // Extract JWT token
+    const jwt = extractJwtToken(req);
+    console.log('JWT token present:', !!jwt);
     
     // Create Supabase client
     const supabase = createSupabaseClient(
       envVars.SUPABASE_URL, 
-      envVars.SUPABASE_ANON_KEY, 
-      jwt
+      envVars.SUPABASE_ANON_KEY
     );
 
     // Parse request body
@@ -228,7 +255,7 @@ Deno.serve(async (req) => {
     }
 
     // Verify admin user
-    const userId = await verifyAdminUser(supabase);
+    const userId = await verifyAdminUser(jwt, supabase);
 
     // Format phone number if needed
     const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
