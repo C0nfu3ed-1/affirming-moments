@@ -12,8 +12,10 @@ import {
   BookOpen, 
   Upload,
   Download,
-  Plus
+  Plus,
+  Zap
 } from 'lucide-react';
+import TestAffirmations from './TestAffirmations';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -116,6 +118,10 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="content" className="space-y-4">
+          {/* Test Affirmations Card */}
+          <TestAffirmations />
+          
+          {/* Content Management Card */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-xl flex justify-between items-center">
