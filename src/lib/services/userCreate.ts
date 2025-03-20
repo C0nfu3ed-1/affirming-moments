@@ -28,8 +28,10 @@ export const createUser = async (
     const userId = crypto.randomUUID();
     
     // Create user profile using RPC function to bypass RLS
-    // The supabase.rpc method requires 2 type arguments: return type and params type
-    const { data, error: rpcError } = await supabase.rpc<boolean, CreateUserProfileParams>(
+    // For supabase.rpc, we need to use the generic parameters in the correct order
+    // The correct order should be return type first, then parameters type
+    // This is according to the Supabase TypeScript definitions
+    const { data, error: rpcError } = await supabase.rpc(
       'create_user_profile',
       {
         user_id: userId,
