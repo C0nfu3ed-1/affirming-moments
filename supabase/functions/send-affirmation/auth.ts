@@ -48,12 +48,12 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Log the exact query we're about to make
     console.log(`Running query: SELECT is_admin FROM profiles WHERE id = '${user.id}'`);
     
-    // Now get the profile with the admin status
+    // Now get the profile with the admin status - use maybeSingle instead of single
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
       
     if (profileError) {
       console.error('Profile check error:', profileError);
@@ -62,8 +62,14 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     
     // Check if profile exists
     if (!profile) {
-      console.error(`No profile found for user ID: ${user.id}`);
-      throw new Error(`User profile not found in database for ID: ${user.id}`);
+      console.error(`Profile not found for user ID: ${user.id}. Checking if user exists in auth.users table.`);
+      
+      // Check if the user exists in auth.users to confirm it's a valid user
+      console.log(`Attempting to verify the user exists in auth system...`);
+      const { user: authUser } = await supabase.auth.getUser(jwt);
+      console.log(`Auth verification result:`, authUser ? 'User exists' : 'User not found');
+      
+      throw new Error(`User profile not found in database for ID: ${user.id}. This likely means the profile record was not properly created during signup.`);
     }
     
     const isAdmin = profile.is_admin || false;

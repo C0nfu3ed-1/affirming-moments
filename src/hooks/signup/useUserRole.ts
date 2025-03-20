@@ -20,10 +20,15 @@ export const checkIfAdmin = async (userId: string): Promise<boolean> => {
       .from('profiles')
       .select('is_admin')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error checking admin status:", error);
+      return false;
+    }
+    
+    if (!data) {
+      console.error("No profile found for user ID:", userId);
       return false;
     }
     
