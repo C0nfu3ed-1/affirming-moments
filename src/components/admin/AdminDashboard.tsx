@@ -1,14 +1,11 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { 
   BarChart, 
   Users, 
   FileText, 
-  UserPlus, 
-  BookOpen, 
-  Download
+  BookOpen
 } from 'lucide-react';
 import OverviewTab from './dashboard/OverviewTab';
 import UsersTab from './dashboard/UsersTab';
@@ -20,18 +17,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-6xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold mb-4 sm:mb-0">Admin Dashboard</h1>
-        <div className="flex space-x-2">
-          <Button className="bg-primary-600 hover:bg-primary-700">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Export Data
-          </Button>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
