@@ -50,16 +50,29 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
       console.log('Database permission test passed, client can access profiles table');
     }
     
+    // Log all profiles in the database to see what's available
+    console.log('Checking all profiles in database...');
+    const { data: allProfiles, error: allProfilesError } = await supabase
+      .from('profiles')
+      .select('id, name, email');
+    
+    if (allProfilesError) {
+      console.error('Error fetching all profiles:', allProfilesError);
+    } else {
+      console.log('All profiles in database:', allProfiles);
+      console.log('Number of profiles in database:', allProfiles ? allProfiles.length : 0);
+    }
+    
     // First, check if the profile exists at all with a simple query to log information
     const { data: profileExists, error: existsError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, name, email')
       .eq('id', user.id);
     
     if (existsError) {
       console.error('Error checking if profile exists:', existsError);
     } else {
-      console.log('Profile query results:', profileExists);
+      console.log(`Profiles matching user ID ${user.id}:`, profileExists);
     }
     
     // Now get the profile with the admin status
@@ -77,13 +90,6 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Check if profile exists
     if (!profile) {
       console.error(`No profile found for user ID: ${user.id}`);
-      
-      // Try to retrieve raw profile data to debug
-      const { data: rawProfiles } = await supabase
-        .from('profiles')
-        .select('*');
-      
-      console.log('Available profiles in database:', rawProfiles);
       
       throw new Error(`User profile not found in database for ID: ${user.id}`);
     }

@@ -1,4 +1,3 @@
-
 import { 
   corsHeaders, 
   handleCors, 
@@ -36,6 +35,9 @@ Deno.serve(async (req) => {
     // Parse request body
     const { userId, affirmationId } = await req.json();
     
+    // Log the received data
+    console.log('Received request data:', { userId, affirmationId });
+    
     // Validate request data
     if (!userId || !affirmationId) {
       return errorResponse('User ID and affirmation ID are required');
@@ -43,9 +45,12 @@ Deno.serve(async (req) => {
     
     // Extract JWT token from request
     const jwt = extractJwtToken(req);
+    console.log('JWT token extracted successfully, length:', jwt ? jwt.length : 'no token');
     
     // Verify admin user
+    console.log('Verifying admin user with JWT and Supabase client...');
     const { userId: adminId, isAdmin } = await verifyAdminUser(jwt, supabase);
+    console.log('Admin verification successful:', { adminId, isAdmin });
     
     // Only admins can send to other users
     if (!isAdmin && userId !== adminId) {
@@ -53,6 +58,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch user profile
+    console.log('Fetching user profile for:', userId);
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('phone')
@@ -65,9 +71,11 @@ Deno.serve(async (req) => {
     }
 
     if (!profile || !profile.phone) {
-      console.error('User profile not found or phone number missing');
+      console.error('User profile not found or phone number missing for ID:', userId);
       return errorResponse('User profile not found or phone number missing', 404);
     }
+
+    console.log('Successfully found user profile with phone number');
 
     // Fetch affirmation
     const { data: affirmation, error: affirmationError } = await supabase

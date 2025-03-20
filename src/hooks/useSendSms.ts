@@ -14,6 +14,10 @@ export const useSendSms = () => {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('JWT token available:', !!session?.access_token);
       
+      if (!session?.access_token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+      
       // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: { phoneNumber, message }
@@ -40,16 +44,22 @@ export const useSendSms = () => {
     setIsLoading(true);
     
     try {
-      // Check if JWT token is available
+      // Check if JWT token is available and logged
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('JWT token available:', !!session?.access_token);
+      console.log('JWT token available for affirmation send:', !!session?.access_token);
       
-      // Call the Edge Function
+      if (!session?.access_token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+      
+      // Call the Edge Function with additional logging
+      console.log('Sending affirmation request with userId:', userId, 'and affirmationId:', affirmationId);
       const { data, error } = await supabase.functions.invoke('send-affirmation', {
         body: { userId, affirmationId }
       });
 
       if (error) {
+        console.error('Supabase edge function error:', error);
         throw error;
       }
 
