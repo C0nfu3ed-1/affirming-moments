@@ -31,7 +31,7 @@ export const useAdminStats = () => {
 
   const calculatePercentChange = (current: number, previous: number): string => {
     if (previous === 0) {
-      return current > 0 ? "+∞%" : "0%";
+      return current > 0 ? "+100%" : "0%";
     }
     
     const percentChange = ((current - previous) / previous) * 100;
