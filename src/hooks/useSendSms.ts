@@ -25,6 +25,10 @@ export const useSendSms = () => {
         console.error('No session found');
         throw new Error('You must be logged in to send messages');
       }
+
+      // Extract the JWT token
+      const jwt = sessionData.session.access_token;
+      console.log('JWT token available:', !!jwt);
       
       // Get user profile to check if admin
       const { data: profile, error: profileError } = await supabase
@@ -43,11 +47,14 @@ export const useSendSms = () => {
         throw new Error('Only administrators can send test messages');
       }
       
-      console.log('Calling edge function with auth token...');
+      console.log('Calling edge function with JWT token...');
       
-      // Call the Edge Function with proper headers
+      // Call the Edge Function with proper JWT token in headers
       const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: { phoneNumber, message }
+        body: { phoneNumber, message },
+        headers: {
+          Authorization: `Bearer ${jwt}`
+        }
       });
       
       if (error) {
@@ -76,6 +83,9 @@ export const useSendSms = () => {
         throw new Error('You must be logged in to send affirmations');
       }
       
+      // Extract the JWT token
+      const jwt = sessionData.session.access_token;
+      
       // Get user profile to check if admin
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -94,6 +104,9 @@ export const useSendSms = () => {
       
       const { error } = await supabase.functions.invoke('send-affirmation', {
         body: { userId, affirmationId },
+        headers: {
+          Authorization: `Bearer ${jwt}`
+        }
       });
       
       if (error) {
