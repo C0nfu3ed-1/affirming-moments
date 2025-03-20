@@ -5,14 +5,17 @@ import { useAdminStats } from '@/hooks/useAdminStats';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const OverviewTab = () => {
-  const { totalUsers, activeSubscribers, messagesSent, categories, loading } = useAdminStats();
-  
-  // Calculate percentages (this would be more accurate with historical data)
-  // For now, showing static percentages as placeholder
-  const userChange = "+5%";
-  const subChange = "+3%";
-  const msgChange = "+12%";
-  const catChange = "0%";
+  const { 
+    totalUsers, 
+    activeSubscribers, 
+    messagesSent, 
+    categories, 
+    userChange,
+    subChange,
+    msgChange,
+    catChange,
+    loading 
+  } = useAdminStats();
 
   if (loading) {
     return (
