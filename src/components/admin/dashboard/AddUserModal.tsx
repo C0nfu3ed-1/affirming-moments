@@ -25,7 +25,8 @@ import { Button } from '@/components/ui/button';
 const userFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 characters')
+  phone: z.string().min(10, 'Phone number must be at least 10 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters')
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -46,7 +47,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
     defaultValues: {
       name: '',
       email: '',
-      phone: ''
+      phone: '',
+      password: ''
     }
   });
 
@@ -97,6 +99,19 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
                     <Input placeholder="+1234567890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

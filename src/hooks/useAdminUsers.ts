@@ -56,10 +56,9 @@ export const useAdminUsers = () => {
     }
   };
 
-  const addUser = async (name: string, email: string, phone: string) => {
+  const addUser = async (name: string, email: string, phone: string, password: string) => {
     try {
-      // Generate a random password for the initial user creation
-      const password = Math.random().toString(36).slice(-8);
+      // Use the provided password instead of generating a random one
       
       // Sign up the new user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -101,7 +100,7 @@ export const useAdminUsers = () => {
       toast.success('User added successfully');
       await fetchUsers(); // Refresh the user list
       
-      return { success: true, password };
+      return { success: true };
     } catch (error) {
       console.error('Error adding user:', error);
       toast.error('Failed to add user');
