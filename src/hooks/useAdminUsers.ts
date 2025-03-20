@@ -30,12 +30,19 @@ export const useAdminUsers = () => {
     setLoading(false);
   }, []);
 
-  const addUser = async (name: string, email: string, phone: string, password: string, isActive: boolean = true) => {
-    const result = await createUser(name, email, phone, password, isActive);
-    if (result.success) {
+  const addUser = async (name: string, email: string, phone: string, isActive: boolean = true) => {
+    const result = await createUser({
+      name,
+      email,
+      phone,
+      isActive
+    });
+    
+    if (result) {
       await fetchUsers(); // Refresh the user list
+      return { success: true };
     }
-    return result;
+    return { success: false };
   };
   
   const updateUser = async (id: string, data: {

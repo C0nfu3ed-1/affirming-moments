@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,10 +27,10 @@ const UsersTab = () => {
     const result = await addUser(
       values.name, 
       values.email, 
-      values.phone, 
-      values.password,
+      values.phone,
       values.isActive
     );
+    
     if (result.success) {
       setAddUserOpen(false);
       toast.success('User added successfully');
