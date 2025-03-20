@@ -31,31 +31,22 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Get user from JWT
     const user = await verifyJwtAndGetUser(jwt, supabase);
     
-    // Verify the user is an admin
+    // Debug: Print user ID being checked
     console.log('Checking admin status for user:', user.id);
     
-    // Debug: Let's print out what we're querying
-    console.log(`Querying profiles table for id = ${user.id}`);
-    
-    // First, check if the profile exists at all
-    const { data: allProfiles, error: countError } = await supabase
+    // First, check if the profile exists at all with a simple query to log information
+    const { data: profileExists, error: existsError } = await supabase
       .from('profiles')
-      .select('id, is_admin')
+      .select('id')
       .eq('id', user.id);
-      
-    if (countError) {
-      console.error('Error fetching profiles:', countError);
-      throw new Error(`Database error: ${countError.message}`);
+    
+    if (existsError) {
+      console.error('Error checking if profile exists:', existsError);
+    } else {
+      console.log('Profile query results:', profileExists);
     }
     
-    console.log('Profiles matching user ID:', allProfiles);
-    
-    if (!allProfiles || allProfiles.length === 0) {
-      console.error('No profile found for user in database:', user.id);
-      throw new Error(`User profile not found in database for ID: ${user.id}`);
-    }
-    
-    // Now get the specific profile with maybeSingle
+    // Now get the profile with the admin status
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -67,13 +58,23 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
       throw new Error(`Profile check error: ${profileError.message}`);
     }
     
-    // Check if profile exists and if user is admin or sending to self
+    // Check if profile exists
     if (!profile) {
-      console.error('No profile found for user after maybeSingle:', user.id);
-      throw new Error(`User profile not found after maybeSingle for ID: ${user.id}`);
+      console.error(`No profile found for user ID: ${user.id}`);
+      
+      // Try to retrieve raw profile data to debug
+      const { data: rawProfiles } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      console.log('Available profiles in database:', rawProfiles);
+      
+      throw new Error(`User profile not found in database for ID: ${user.id}`);
     }
     
     const isAdmin = profile.is_admin || false;
+    console.log('User admin status:', isAdmin);
+    
     return { userId: user.id, isAdmin };
   } catch (error) {
     console.error('Error in verifyAdminUser:', error);
