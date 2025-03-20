@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -178,12 +177,14 @@ export const useAdminUsers = () => {
           prefError = error;
         } else {
           // Create preference if it doesn't exist
+          // Fix: Ensure categories is always provided as an array, even if empty
           const { error } = await supabase
             .from('user_preferences')
             .insert({
               user_id: id,
-              ...prefData,
+              categories: data.categories || [], // Ensure this is always an array
               time_preference: 'morning', // Default value
+              is_active: data.isActive !== undefined ? data.isActive : true
             });
           
           prefError = error;
