@@ -6,7 +6,6 @@ import { AddAffirmationDialog } from '../AddAffirmationDialog';
 import { BulkUploadDialog } from '../BulkUploadDialog';
 import { ViewAffirmationsDialog } from '../ViewAffirmationsDialog';
 import { EditAffirmationsDialog } from '../EditAffirmationsDialog';
-import SendTestSms from '../SendTestSms';
 
 const ContentTab = () => {
   // Fetch categories
@@ -19,9 +18,6 @@ const ContentTab = () => {
   
   return (
     <div className="space-y-6">
-      {/* Test SMS Card */}
-      <SendTestSms />
-      
       {/* Content Management Card */}
       <Card>
         <CardHeader className="pb-2">

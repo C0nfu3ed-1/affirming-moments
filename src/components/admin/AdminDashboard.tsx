@@ -5,12 +5,14 @@ import {
   BarChart, 
   Users, 
   FileText, 
-  BookOpen
+  BookOpen,
+  MessageSquare
 } from 'lucide-react';
 import OverviewTab from './dashboard/OverviewTab';
 import UsersTab from './dashboard/UsersTab';
 import ContentTab from './dashboard/ContentTab';
 import LogsTab from './dashboard/LogsTab';
+import TestSmsTab from './dashboard/TestSmsTab';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -22,7 +24,7 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           <TabsTrigger value="overview" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900 dark:data-[state=active]:text-primary-300">
             <BarChart className="mr-2 h-4 w-4" />
             Overview
@@ -34,6 +36,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="content" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900 dark:data-[state=active]:text-primary-300">
             <BookOpen className="mr-2 h-4 w-4" />
             Content
+          </TabsTrigger>
+          <TabsTrigger value="test-sms" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900 dark:data-[state=active]:text-primary-300">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Test SMS
           </TabsTrigger>
           <TabsTrigger value="logs" className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-900 dark:data-[state=active]:text-primary-300">
             <FileText className="mr-2 h-4 w-4" />
@@ -51,6 +57,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="content" className="space-y-4">
           <ContentTab />
+        </TabsContent>
+
+        <TabsContent value="test-sms" className="space-y-4">
+          <TestSmsTab />
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4">
