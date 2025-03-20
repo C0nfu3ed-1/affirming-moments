@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AdminUser } from '@/hooks/useAdminUsers';
@@ -79,10 +78,6 @@ export const createUser = async (
       toast.error('Failed to create user');
       return { success: false, error: 'No user data returned' };
     }
-    
-    // Use service role (admin) client for profile creation
-    // This bypasses RLS policies
-    const serviceClient = supabase.auth.admin;
     
     // Create the profile record using a function instead of direct insertion
     // This is a workaround for the RLS policy issue
