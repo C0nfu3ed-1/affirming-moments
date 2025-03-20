@@ -2,6 +2,15 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+// Define the correct types for our RPC function
+type CreateUserProfileParams = {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone: string;
+  is_user_admin: boolean;
+};
+
 export const createUser = async (
   userData: {
     name: string;
@@ -19,8 +28,8 @@ export const createUser = async (
     const userId = crypto.randomUUID();
     
     // Create user profile using RPC function to bypass RLS
-    // Let TypeScript infer the types automatically
-    const { data, error: rpcError } = await supabase.rpc(
+    // Specify the correct type parameter order: return type first, params type second
+    const { data, error: rpcError } = await supabase.rpc<boolean, CreateUserProfileParams>(
       'create_user_profile',
       {
         user_id: userId,
