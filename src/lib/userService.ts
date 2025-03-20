@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { AdminUser } from '@/hooks/useAdminUsers';
@@ -43,7 +44,8 @@ export const createUser = async (
   name: string, 
   email: string, 
   phone: string, 
-  password: string
+  password: string,
+  isActive: boolean = true
 ): Promise<{ success: boolean; error?: any }> => {
   try {
     // Check for valid email format explicitly
@@ -104,7 +106,7 @@ export const createUser = async (
         user_id: authData.user.id,
         categories: ['morning', 'confidence'],
         time_preference: 'morning',
-        is_active: true,
+        is_active: isActive,
       });
     
     if (prefError) {

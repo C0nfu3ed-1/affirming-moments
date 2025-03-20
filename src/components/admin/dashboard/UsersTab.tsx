@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +18,20 @@ const UsersTab = () => {
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   
-  const handleAddUser = async (values: { name: string; email: string; phone: string; password: string }) => {
-    const result = await addUser(values.name, values.email, values.phone, values.password);
+  const handleAddUser = async (values: { 
+    name: string; 
+    email: string; 
+    phone: string; 
+    password: string;
+    isActive: boolean;
+  }) => {
+    const result = await addUser(
+      values.name, 
+      values.email, 
+      values.phone, 
+      values.password,
+      values.isActive
+    );
     if (result.success) {
       setAddUserOpen(false);
       toast.success('User added successfully');

@@ -17,10 +17,12 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
+  FormDescription
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useState } from 'react';
 
 // Updated email validation pattern
@@ -33,7 +35,8 @@ const userFormSchema = z.object({
     .min(1, 'Email is required')
     .regex(EMAIL_REGEX, 'Invalid email format'),
   phone: z.string().min(10, 'Phone number must be at least 10 characters'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  isActive: z.boolean().default(true)
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -57,7 +60,8 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
       name: '',
       email: '',
       phone: '',
-      password: ''
+      password: '',
+      isActive: true
     }
   });
 
@@ -138,6 +142,26 @@ const AddUserModal: React.FC<AddUserModalProps> = ({
                     <Input type="password" placeholder="••••••••" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Active Status</FormLabel>
+                    <FormDescription>
+                      Set whether this user will be active upon creation
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

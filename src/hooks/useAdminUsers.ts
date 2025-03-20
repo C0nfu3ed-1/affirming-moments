@@ -30,8 +30,8 @@ export const useAdminUsers = () => {
     setLoading(false);
   }, []);
 
-  const addUser = async (name: string, email: string, phone: string, password: string) => {
-    const result = await createUser(name, email, phone, password);
+  const addUser = async (name: string, email: string, phone: string, password: string, isActive: boolean = true) => {
+    const result = await createUser(name, email, phone, password, isActive);
     if (result.success) {
       await fetchUsers(); // Refresh the user list
     }
