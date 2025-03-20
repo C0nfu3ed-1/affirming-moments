@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 // CORS headers
@@ -10,7 +9,7 @@ const corsHeaders = {
 // Handle CORS preflight requests
 function handleCors(req: Request) {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { 
+    return new Response(null, {
       headers: corsHeaders,
       status: 204,
     });
@@ -50,44 +49,59 @@ function validateEnvironment() {
     throw new Error('Server configuration error: Missing Twilio environment variables');
   }
 
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase configuration');
+    throw new Error('Server configuration error: Missing Supabase configuration');
+  }
+
   return {
     TWILIO_ACCOUNT_SID,
     TWILIO_AUTH_TOKEN,
-    TWILIO_PHONE_NUMBER
+    TWILIO_PHONE_NUMBER,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
   };
 }
 
-// Create Supabase client
-function createSupabaseClient(authHeader: string) {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+// Verify admin user (and get the user ID)
+async function verifyAdminUser(jwt: string, supabase: any) {
+  // Verify the JWT
+  const { data: { user }, error } = await supabase.auth.getUser(jwt);
   
-  return createClient(supabaseUrl, supabaseKey, {
-    global: {
-      headers: {
-        Authorization: authHeader,
-      },
-    },
-    auth: {
-      persistSession: false,
-    }
-  });
-}
-
-// Verify user permissions
-async function verifyPermissions(supabase: any, userId: string) {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    console.error('Authentication error:', userError);
+  if (error || !user) {
     throw new Error('Unauthorized');
   }
 
-  // Check if user is admin
+  // Debug: Let's print what we're querying
+  console.log(`Querying profiles table for id = ${user.id}`);
+  
+  // First, check if the profile exists at all
+  const { data: allProfiles, error: countError } = await supabase
+    .from('profiles')
+    .select('id, is_admin')
+    .eq('id', user.id);
+    
+  if (countError) {
+    console.error('Error fetching profiles:', countError);
+    throw new Error(`Database error: ${countError.message}`);
+  }
+  
+  console.log('Profiles matching user ID:', allProfiles);
+  
+  if (!allProfiles || allProfiles.length === 0) {
+    console.error('No profile found for user in database:', user.id);
+    throw new Error(`User profile not found in database for ID: ${user.id}`);
+  }
+  
+  // Now get the specific profile with maybeSingle
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('is_admin')
     .eq('id', user.id)
-    .maybeSingle(); // Changed from single() to maybeSingle()
+    .maybeSingle();
   
   if (profileError) {
     console.error('Profile check error:', profileError);
@@ -95,62 +109,13 @@ async function verifyPermissions(supabase: any, userId: string) {
   }
   
   // Check if profile exists and if user is admin or sending to self
-  const isAdmin = profile?.is_admin || false;
-  if (!isAdmin && userId !== user.id) {
-    throw new Error('Unauthorized to send affirmations to this user');
-  }
-  
-  return user.id;
-}
-
-// Get user profile
-async function getUserProfile(supabase: any, userId: string) {
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('phone, name')
-    .eq('id', userId)
-    .maybeSingle(); // Changed from single() to maybeSingle()
-
-  if (profileError) {
-    console.error('Error fetching user profile:', profileError);
-    throw new Error(`Profile error: ${profileError.message}`);
-  }
-  
   if (!profile) {
-    console.error('User profile not found:', userId);
-    throw new Error('User profile not found');
+    console.error('No profile found for user after maybeSingle:', user.id);
+    throw new Error(`User profile not found after maybeSingle for ID: ${user.id}`);
   }
   
-  return profile;
-}
-
-// Get affirmation text
-async function getAffirmation(supabase: any, affirmationId: string) {
-  const { data: affirmation, error: affirmationError } = await supabase
-    .from('affirmations')
-    .select('text, category')
-    .eq('id', affirmationId)
-    .maybeSingle(); // Changed from single() to maybeSingle()
-
-  if (affirmationError) {
-    console.error('Error fetching affirmation:', affirmationError);
-    throw new Error(`Affirmation error: ${affirmationError.message}`);
-  }
-  
-  if (!affirmation) {
-    console.error('Affirmation not found:', affirmationId);
-    throw new Error('Affirmation not found');
-  }
-  
-  return affirmation;
-}
-
-// Format phone number
-function formatPhoneNumber(phoneNumber: string) {
-  if (!phoneNumber.startsWith('+')) {
-    return `+${phoneNumber.replace(/\D/g, '')}`;
-  }
-  return phoneNumber;
+  const isAdmin = profile.is_admin || false;
+  return { userId: user.id, isAdmin };
 }
 
 // Send SMS via Twilio
@@ -185,18 +150,23 @@ async function sendTwilioSMS(phoneNumber: string, message: string, twilioConfig:
     throw new Error(`Twilio error: ${twilioData.message || 'Unknown error'}`);
   }
 
+  console.log('SMS sent successfully:', twilioData.sid);
   return twilioData;
 }
 
-// Log message to database
-async function logMessage(supabase: any, userId: string, affirmationId: string, status: string, details: any) {
+// Log message in the database
+async function logMessageToDb(supabase: any, userId: string, affirmationId: string, phoneNumber: string, message: string, twilioSid: string) {
   const { error: logError } = await supabase
     .from('message_logs')
     .insert({
       user_id: userId,
       affirmation_id: affirmationId,
-      status: status,
-      details: JSON.stringify(details)
+      status: 'sent',
+      details: JSON.stringify({
+        to: phoneNumber,
+        body: message,
+        twilio_sid: twilioSid
+      })
     });
 
   if (logError) {
@@ -205,86 +175,113 @@ async function logMessage(supabase: any, userId: string, affirmationId: string, 
   }
 }
 
-// Main handler function
+// Main handler
 Deno.serve(async (req) => {
-  // Handle CORS
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders,
+      status: 204,
+    });
+  }
 
-  // Only accept POST requests
+  // Only allow POST requests
   if (req.method !== 'POST') {
     return errorResponse('Method not allowed', 405);
   }
-
-  // Get the JWT token from the request
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return errorResponse('Missing authorization header', 401);
-  }
-
-  // Create a Supabase client
-  const supabase = createSupabaseClient(authHeader);
 
   try {
     // Validate environment variables
     const envVars = validateEnvironment();
     
+    // Create Supabase client (with persistSession: false)
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      {
+        auth: {
+          persistSession: false,
+        }
+      }
+    );
+    
     // Parse request body
     const { userId, affirmationId } = await req.json();
-
+    
     // Validate request data
     if (!userId || !affirmationId) {
       return errorResponse('User ID and affirmation ID are required');
     }
+    
+    // Extract JWT token from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return errorResponse('Missing Authorization header', 401);
+    }
+    
+    const jwt = authHeader.replace('Bearer ', '');
+    
+    // Verify admin user
+    const { userId: adminId, isAdmin } = await verifyAdminUser(jwt, supabase);
+    
+    // Only admins can send to other users
+    if (!isAdmin && userId !== adminId) {
+      return errorResponse('Only administrators can send affirmations to other users', 403);
+    }
 
-    // Verify permissions
-    await verifyPermissions(supabase, userId);
+    // Fetch user profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('phone')
+      .eq('id', userId)
+      .single();
 
-    // Get user profile and affirmation
-    const profile = await getUserProfile(supabase, userId);
-    const affirmation = await getAffirmation(supabase, affirmationId);
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return errorResponse(`Failed to fetch user profile: ${profileError.message}`, 500);
+    }
 
-    // Format the message
-    const message = `Hi ${profile.name}, here's your affirmation for today: "${affirmation.text}"`;
+    if (!profile || !profile.phone) {
+      console.error('User profile not found or phone number missing');
+      return errorResponse('User profile not found or phone number missing', 404);
+    }
 
-    // Format phone number
-    const formattedPhoneNumber = formatPhoneNumber(profile.phone);
+    // Fetch affirmation
+    const { data: affirmation, error: affirmationError } = await supabase
+      .from('affirmations')
+      .select('text')
+      .eq('id', affirmationId)
+      .single();
+
+    if (affirmationError) {
+      console.error('Error fetching affirmation:', affirmationError);
+      return errorResponse(`Failed to fetch affirmation: ${affirmationError.message}`, 500);
+    }
+
+    if (!affirmation || !affirmation.text) {
+      console.error('Affirmation not found');
+      return errorResponse('Affirmation not found', 404);
+    }
+
+    const phoneNumber = profile.phone;
+    const message = affirmation.text;
 
     // Send SMS via Twilio
-    const twilioData = await sendTwilioSMS(formattedPhoneNumber, message, {
+    const twilioData = await sendTwilioSMS(phoneNumber, message, {
       TWILIO_ACCOUNT_SID: envVars.TWILIO_ACCOUNT_SID,
       TWILIO_AUTH_TOKEN: envVars.TWILIO_AUTH_TOKEN,
       TWILIO_PHONE_NUMBER: envVars.TWILIO_PHONE_NUMBER
     });
 
-    // Log the successful message
-    await logMessage(supabase, userId, affirmationId, 'sent', {
-      to: formattedPhoneNumber,
-      twilio_sid: twilioData.sid
-    });
-
+    // Log the message
+    await logMessageToDb(supabase, userId, affirmationId, phoneNumber, message, twilioData.sid);
+    
     return successResponse({
       success: true,
-      messageId: twilioData.sid,
-      message: 'Affirmation sent successfully',
+      message: 'Affirmation sent successfully'
     });
   } catch (error) {
     console.error('Error sending affirmation:', error);
-    
-    // If it's a request parsing error, we won't have userId/affirmationId
-    try {
-      const { userId, affirmationId } = await req.json();
-      
-      // Log the failed message if we have user and affirmation IDs
-      if (userId && affirmationId) {
-        await logMessage(supabase, userId, affirmationId, 'failed', {
-          error: error.message || 'Unknown error'
-        });
-      }
-    } catch (e) {
-      // Ignore errors in the error handler
-    }
-    
     return errorResponse(`Server error: ${error.message}`, 500);
   }
 });

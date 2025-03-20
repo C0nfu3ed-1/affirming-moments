@@ -113,11 +113,34 @@ async function verifyAdminUser(jwt: string, supabase: any) {
     
     // Verify the user is an admin
     console.log('Checking admin status for user:', user.id);
+    
+    // Debug: Let's print out what we're querying
+    console.log(`Querying profiles table for id = ${user.id}`);
+    
+    // First, check if the profile exists at all
+    const { data: allProfiles, error: countError } = await supabase
+      .from('profiles')
+      .select('id, is_admin')
+      .eq('id', user.id);
+      
+    if (countError) {
+      console.error('Error fetching profiles:', countError);
+      throw new Error(`Database error: ${countError.message}`);
+    }
+    
+    console.log('Profiles matching user ID:', allProfiles);
+    
+    if (!allProfiles || allProfiles.length === 0) {
+      console.error('No profile found for user in database:', user.id);
+      throw new Error(`User profile not found in database for ID: ${user.id}`);
+    }
+    
+    // Now get the specific profile with maybeSingle
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
-      .maybeSingle(); // Changed from single() to maybeSingle()
+      .maybeSingle();
       
     if (profileError) {
       console.error('Profile check error:', profileError);
@@ -126,8 +149,8 @@ async function verifyAdminUser(jwt: string, supabase: any) {
     
     // Check if profile exists and is admin
     if (!profile) {
-      console.error('No profile found for user:', user.id);
-      throw new Error('User profile not found');
+      console.error('No profile found for user after maybeSingle:', user.id);
+      throw new Error(`User profile not found after maybeSingle for ID: ${user.id}`);
     }
     
     if (!profile.is_admin) {
