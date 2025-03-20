@@ -68,6 +68,9 @@ function createSupabaseClient(authHeader: string) {
         Authorization: authHeader,
       },
     },
+    auth: {
+      persistSession: false,
+    }
   });
 }
 
@@ -79,8 +82,20 @@ async function verifyPermissions(supabase: any, userId: string) {
     throw new Error('Unauthorized');
   }
 
-  // Check if user has permission (either admin or sending to self)
-  const isAdmin = user.app_metadata?.is_admin || false;
+  // Check if user is admin
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .maybeSingle(); // Changed from single() to maybeSingle()
+  
+  if (profileError) {
+    console.error('Profile check error:', profileError);
+    throw new Error(`Profile check error: ${profileError.message}`);
+  }
+  
+  // Check if profile exists and if user is admin or sending to self
+  const isAdmin = profile?.is_admin || false;
   if (!isAdmin && userId !== user.id) {
     throw new Error('Unauthorized to send affirmations to this user');
   }
@@ -94,10 +109,15 @@ async function getUserProfile(supabase: any, userId: string) {
     .from('profiles')
     .select('phone, name')
     .eq('id', userId)
-    .single();
+    .maybeSingle(); // Changed from single() to maybeSingle()
 
-  if (profileError || !profile) {
+  if (profileError) {
     console.error('Error fetching user profile:', profileError);
+    throw new Error(`Profile error: ${profileError.message}`);
+  }
+  
+  if (!profile) {
+    console.error('User profile not found:', userId);
     throw new Error('User profile not found');
   }
   
@@ -110,10 +130,15 @@ async function getAffirmation(supabase: any, affirmationId: string) {
     .from('affirmations')
     .select('text, category')
     .eq('id', affirmationId)
-    .single();
+    .maybeSingle(); // Changed from single() to maybeSingle()
 
-  if (affirmationError || !affirmation) {
+  if (affirmationError) {
     console.error('Error fetching affirmation:', affirmationError);
+    throw new Error(`Affirmation error: ${affirmationError.message}`);
+  }
+  
+  if (!affirmation) {
+    console.error('Affirmation not found:', affirmationId);
     throw new Error('Affirmation not found');
   }
   

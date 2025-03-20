@@ -117,14 +117,20 @@ async function verifyAdminUser(jwt: string, supabase: any) {
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // Changed from single() to maybeSingle()
       
     if (profileError) {
       console.error('Profile check error:', profileError);
       throw new Error(`Profile check error: ${profileError.message}`);
     }
     
-    if (!profile || !profile.is_admin) {
+    // Check if profile exists and is admin
+    if (!profile) {
+      console.error('No profile found for user:', user.id);
+      throw new Error('User profile not found');
+    }
+    
+    if (!profile.is_admin) {
       console.error('User not admin:', user.id);
       throw new Error('Only administrators can send test messages');
     }
