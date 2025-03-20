@@ -2,15 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, Plus } from 'lucide-react';
-import TestAffirmations from '../TestAffirmations';
 import SendTestSms from '../SendTestSms';
 
 const ContentTab = () => {
   return (
     <div className="space-y-6">
-      {/* Test Affirmations Card */}
-      <TestAffirmations />
-      
       {/* Test SMS Card */}
       <SendTestSms />
       
