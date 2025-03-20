@@ -8,17 +8,17 @@ const corsHeaders = {
 };
 
 // Handle CORS preflight requests
-const handleCors = (req: Request) => {
+function handleCors(req: Request) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
       status: 204,
     });
   }
-};
+}
 
 // Error response helper
-const errorResponse = (message: string, status = 400) => {
+function errorResponse(message: string, status = 400) {
   return new Response(
     JSON.stringify({ error: message }),
     {
@@ -26,10 +26,10 @@ const errorResponse = (message: string, status = 400) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     }
   );
-};
+}
 
 // Success response helper
-const successResponse = (data: any) => {
+function successResponse(data: any) {
   return new Response(
     JSON.stringify(data),
     {
@@ -37,8 +37,157 @@ const successResponse = (data: any) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     }
   );
-};
+}
 
+// Validate environment variables
+function validateEnvironment() {
+  const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
+  const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
+  const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    console.error('Missing Twilio environment variables');
+    throw new Error('Server configuration error: Missing Twilio environment variables');
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase configuration');
+    throw new Error('Server configuration error: Missing Supabase configuration');
+  }
+
+  return {
+    TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  };
+}
+
+// Create Supabase client with JWT token
+function createSupabaseClient(supabaseUrl: string, supabaseAnonKey: string, jwt: string) {
+  return createClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      global: {
+        headers: {
+          Authorization: `Bearer ${jwt}`
+        }
+      }
+    }
+  );
+}
+
+// Verify user is authenticated and is an admin
+async function verifyAdminUser(supabase: any) {
+  console.log('Verifying user authentication with JWT...');
+  const { data: userData, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    console.error('Authentication error:', authError);
+    throw new Error(`Authentication error: ${authError.message}`);
+  }
+  
+  if (!userData?.user) {
+    console.error('No user data found');
+    throw new Error('Unauthorized: No user found');
+  }
+  
+  console.log('User authenticated:', userData.user.id);
+
+  // Verify the user is an admin
+  console.log('Checking admin status...');
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', userData.user.id)
+    .single();
+    
+  if (profileError) {
+    console.error('Profile check error:', profileError);
+    throw new Error(`Profile check error: ${profileError.message}`);
+  }
+  
+  if (!profile || !profile.is_admin) {
+    console.error('User not admin:', userData.user.id);
+    throw new Error('Only administrators can send test messages');
+  }
+  
+  console.log('Admin status verified for user:', userData.user.id);
+  return userData.user.id;
+}
+
+// Format phone number
+function formatPhoneNumber(phoneNumber: string) {
+  if (!phoneNumber.startsWith('+')) {
+    return `+${phoneNumber.replace(/\D/g, '')}`;
+  }
+  return phoneNumber;
+}
+
+// Send SMS via Twilio
+async function sendTwilioSMS(phoneNumber: string, message: string, twilioConfig: any) {
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = twilioConfig;
+  
+  console.log(`Sending SMS to ${phoneNumber} with message: ${message.substring(0, 30)}...`);
+
+  // Construct the Twilio API URL
+  const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+
+  // Create the form data for the Twilio request
+  const formData = new URLSearchParams();
+  formData.append('To', phoneNumber);
+  formData.append('From', TWILIO_PHONE_NUMBER);
+  formData.append('Body', message);
+
+  // Send the SMS via Twilio API
+  const twilioResponse = await fetch(twilioApiUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+    },
+    body: formData.toString(),
+  });
+
+  // Parse Twilio response
+  const twilioData = await twilioResponse.json();
+
+  // Check if Twilio returned an error
+  if (!twilioResponse.ok) {
+    console.error('Twilio API error:', twilioData);
+    throw new Error(`Twilio error: ${twilioData.message || 'Unknown error'}`);
+  }
+
+  console.log('SMS sent successfully:', twilioData.sid);
+  return twilioData;
+}
+
+// Log message in the database
+async function logMessageToDb(supabase: any, userId: string, phoneNumber: string, message: string, twilioSid: string) {
+  const { error: logError } = await supabase
+    .from('message_logs')
+    .insert({
+      user_id: userId,
+      affirmation_id: 'manual-send', // For manual sends
+      status: 'sent',
+      details: JSON.stringify({
+        to: phoneNumber,
+        body: message,
+        twilio_sid: twilioSid
+      })
+    });
+
+  if (logError) {
+    console.error('Error logging message:', logError);
+    // We continue even if logging fails
+  }
+}
+
+// Main handler function
 Deno.serve(async (req) => {
   console.log('SMS Edge Function called');
   
@@ -46,24 +195,13 @@ Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
-  // Get environment variables
-  const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const TWILIO_PHONE_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER');
-
-  // Check if all required env vars are set
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-    console.error('Missing Twilio environment variables');
-    return errorResponse('Server configuration error', 500);
-  }
-
   // Only accept POST requests
   if (req.method !== 'POST') {
     return errorResponse('Method not allowed', 405);
   }
 
   try {
-    // Get the JWT token from the request
+    // Get JWT token from the request
     const jwt = req.headers.get('Authorization')?.replace('Bearer ', '');
     console.log('JWT token present:', !!jwt);
     
@@ -71,27 +209,14 @@ Deno.serve(async (req) => {
       return errorResponse('Missing JWT token', 401);
     }
 
-    // Get the Supabase URL and key from environment
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    // Validate environment variables
+    const envVars = validateEnvironment();
     
-    console.log('Supabase URL and key available:', !!supabaseUrl && !!supabaseAnonKey);
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return errorResponse('Missing Supabase configuration', 500);
-    }
-
-    // Create a Supabase client with the JWT token
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${jwt}`
-          }
-        }
-      }
+    // Create Supabase client
+    const supabase = createSupabaseClient(
+      envVars.SUPABASE_URL, 
+      envVars.SUPABASE_ANON_KEY, 
+      jwt
     );
 
     // Parse request body
@@ -102,99 +227,21 @@ Deno.serve(async (req) => {
       return errorResponse('Phone number and message are required');
     }
 
-    // Verify the user is authenticated
-    console.log('Verifying user authentication with JWT...');
-    const { data: userData, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.error('Authentication error:', authError);
-      return errorResponse(`Authentication error: ${authError.message}`, 401);
-    }
-    
-    if (!userData?.user) {
-      console.error('No user data found');
-      return errorResponse('Unauthorized: No user found', 401);
-    }
-    
-    console.log('User authenticated:', userData.user.id);
-
-    // Verify the user is an admin
-    console.log('Checking admin status...');
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', userData.user.id)
-      .single();
-      
-    if (profileError) {
-      console.error('Profile check error:', profileError);
-      return errorResponse(`Profile check error: ${profileError.message}`, 403);
-    }
-    
-    if (!profile || !profile.is_admin) {
-      console.error('User not admin:', userData.user.id);
-      return errorResponse('Only administrators can send test messages', 403);
-    }
-    
-    console.log('Admin status verified for user:', userData.user.id);
+    // Verify admin user
+    const userId = await verifyAdminUser(supabase);
 
     // Format phone number if needed
-    let formattedPhoneNumber = phoneNumber;
-    if (!phoneNumber.startsWith('+')) {
-      formattedPhoneNumber = `+${phoneNumber.replace(/\D/g, '')}`;
-    }
+    const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
 
-    console.log(`Sending SMS to ${formattedPhoneNumber} with message: ${message.substring(0, 30)}...`);
-
-    // Construct the Twilio API URL
-    const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-
-    // Create the form data for the Twilio request
-    const formData = new URLSearchParams();
-    formData.append('To', formattedPhoneNumber);
-    formData.append('From', TWILIO_PHONE_NUMBER);
-    formData.append('Body', message);
-
-    // Send the SMS via Twilio API
-    const twilioResponse = await fetch(twilioApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-      },
-      body: formData.toString(),
+    // Send SMS via Twilio
+    const twilioData = await sendTwilioSMS(formattedPhoneNumber, message, {
+      TWILIO_ACCOUNT_SID: envVars.TWILIO_ACCOUNT_SID,
+      TWILIO_AUTH_TOKEN: envVars.TWILIO_AUTH_TOKEN,
+      TWILIO_PHONE_NUMBER: envVars.TWILIO_PHONE_NUMBER
     });
 
-    // Parse Twilio response
-    const twilioData = await twilioResponse.json();
-
-    // Check if Twilio returned an error
-    if (!twilioResponse.ok) {
-      console.error('Twilio API error:', twilioData);
-      return errorResponse(`Twilio error: ${twilioData.message || 'Unknown error'}`, 500);
-    }
-
-    // Log the successful message
-    console.log('SMS sent successfully:', twilioData.sid);
-
-    // Store the message in the message_logs table
-    const { error: logError } = await supabase
-      .from('message_logs')
-      .insert({
-        user_id: userData.user.id,
-        affirmation_id: 'manual-send', // For manual sends
-        status: 'sent',
-        details: JSON.stringify({
-          to: formattedPhoneNumber,
-          body: message,
-          twilio_sid: twilioData.sid
-        })
-      });
-
-    if (logError) {
-      console.error('Error logging message:', logError);
-      // We continue even if logging fails
-    }
+    // Log the message in the database
+    await logMessageToDb(supabase, userId, formattedPhoneNumber, message, twilioData.sid);
 
     return successResponse({
       success: true,
