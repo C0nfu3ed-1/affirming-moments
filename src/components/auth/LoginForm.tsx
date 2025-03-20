@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -100,7 +99,7 @@ const LoginForm = () => {
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
               <Link 
-                to="/auth/reset-password" 
+                to="/reset-password" 
                 className="text-xs text-primary-600 hover:text-primary-800 transition-colors"
               >
                 Forgot password?

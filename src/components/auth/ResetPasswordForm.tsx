@@ -14,23 +14,24 @@ import {
 } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const ResetPasswordForm = () => {
   const navigate = useNavigate();
+  const { resetPassword } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
+      const { error } = await resetPassword(email);
       
       if (error) {
         throw error;
@@ -42,9 +43,7 @@ export const ResetPasswordForm = () => {
       });
     } catch (error: any) {
       console.error('Error sending reset email:', error);
-      toast.error('Error', {
-        description: error.message || 'Failed to send reset link. Please try again.',
-      });
+      setError(error.message || 'Failed to send reset link. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +86,11 @@ export const ResetPasswordForm = () => {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="p-3 text-sm bg-red-50 border border-red-200 text-red-600 rounded-md">
+              {error}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
