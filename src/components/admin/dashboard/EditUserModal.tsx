@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
@@ -22,14 +22,27 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AdminUser } from '@/hooks/useAdminUsers';
+
+// List of available categories matching those in CategorySelection component
+const availableCategories = [
+  { id: 'morning', name: 'Morning Motivation' },
+  { id: 'confidence', name: 'Confidence Boosters' },
+  { id: 'gratitude', name: 'Gratitude & Appreciation' },
+  { id: 'success', name: 'Success Mindset' },
+  { id: 'mindfulness', name: 'Mindfulness & Peace' },
+  { id: 'health', name: 'Health & Wellness' },
+  { id: 'relationships', name: 'Relationship Happiness' },
+  { id: 'career', name: 'Career & Purpose' },
+];
 
 // Form validation schema
 const editUserFormSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
   isActive: z.boolean(),
-  categories: z.string()
+  categories: z.array(z.string())
 });
 
 type EditUserFormValues = z.infer<typeof editUserFormSchema>;
@@ -58,7 +71,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       name: '',
       email: '',
       isActive: false,
-      categories: ''
+      categories: []
     }
   });
 
@@ -69,23 +82,18 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         name: user.name,
         email: user.email,
         isActive: user.isActive,
-        categories: user.categories.join(', ')
+        categories: user.categories || []
       });
     }
   }, [user, form]);
 
   const handleSubmit = async (values: EditUserFormValues) => {
     if (user) {
-      const categories = values.categories
-        .split(',')
-        .map(cat => cat.trim())
-        .filter(cat => cat.length > 0);
-      
       await onSubmit(user.id, {
         name: values.name,
         email: values.email,
         isActive: values.isActive,
-        categories
+        categories: values.categories
       });
     }
   };
@@ -146,19 +154,45 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="categories"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categories (comma separated)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            
+            <div>
+              <FormLabel>Categories</FormLabel>
+              <div className="mt-2 grid grid-cols-1 gap-2 border rounded-md p-3">
+                {availableCategories.map((category) => (
+                  <FormField
+                    key={category.id}
+                    control={form.control}
+                    name="categories"
+                    render={({ field }) => {
+                      return (
+                        <FormItem
+                          key={category.id}
+                          className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value?.includes(category.id)}
+                              onCheckedChange={(checked) => {
+                                const updatedCategories = checked
+                                  ? [...field.value, category.id]
+                                  : field.value?.filter(
+                                      (value) => value !== category.id
+                                    );
+                                field.onChange(updatedCategories);
+                              }}
+                            />
+                          </FormControl>
+                          <FormLabel className="font-normal cursor-pointer">
+                            {category.name}
+                          </FormLabel>
+                        </FormItem>
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            
             <DialogFooter>
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
