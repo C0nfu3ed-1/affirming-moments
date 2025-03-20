@@ -1,19 +1,51 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Check, Clock, DollarSign } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import CategorySelection from './CategorySelection';
 import TimeSelection from './TimeSelection';
+import { getUserPreferences, updateUserPreferences } from '@/lib/preferences';
+import { supabase } from '@/lib/supabase';
 
 const MemberDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>('morning');
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  // Fetch current user and their preferences
+  useEffect(() => {
+    const fetchUserAndPreferences = async () => {
+      setIsLoading(true);
+      
+      // Get current authenticated user
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/login');
+        return;
+      }
+      
+      const currentUserId = session.user.id;
+      setUserId(currentUserId);
+      
+      // Fetch user preferences
+      const { preferences } = await getUserPreferences(currentUserId);
+      
+      if (preferences) {
+        setSelectedCategories(preferences.categories || []);
+        setSelectedTime(preferences.time_preference || 'morning');
+      }
+      
+      setIsLoading(false);
+    };
+    
+    fetchUserAndPreferences();
+  }, [navigate]);
   
   const handleCategoryChange = (categories: string[]) => {
     setSelectedCategories(categories);
@@ -23,34 +55,59 @@ const MemberDashboard = () => {
     setSelectedTime(time);
   };
   
-  const handleSavePreferences = () => {
+  const handleSavePreferences = async () => {
+    if (!userId) {
+      toast.error('You must be logged in to save preferences');
+      return;
+    }
+    
+    if (selectedCategories.length === 0) {
+      toast.error('Please select at least one category');
+      return;
+    }
+    
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "Preferences Saved",
-        description: "Your affirmation preferences have been updated.",
-        variant: "default",
-      });
-    }, 1000);
+    const result = await updateUserPreferences(
+      userId,
+      selectedCategories,
+      selectedTime,
+      true // Keep the user active
+    );
+    
+    setIsLoading(false);
+    
+    if (result.error) {
+      toast.error('Failed to save preferences');
+    } else {
+      toast.success('Your preferences have been saved');
+    }
   };
   
-  const handleDeleteSubscription = () => {
+  const handleDeleteSubscription = async () => {
+    if (!userId) {
+      toast.error('You must be logged in to cancel your subscription');
+      return;
+    }
+    
     if (window.confirm("Are you sure you want to cancel your subscription? You will no longer receive daily affirmations.")) {
       setIsLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        setIsLoading(false);
-        toast({
-          title: "Subscription Cancelled",
-          description: "Your subscription has been cancelled.",
-          variant: "default",
-        });
+      const result = await updateUserPreferences(
+        userId,
+        selectedCategories,
+        selectedTime,
+        false // Set the user as inactive
+      );
+      
+      setIsLoading(false);
+      
+      if (result.error) {
+        toast.error('Failed to cancel subscription');
+      } else {
+        toast.success('Your subscription has been cancelled');
         navigate('/');
-      }, 1000);
+      }
     }
   };
   

@@ -3,86 +3,60 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 export const createUser = async (
-  name: string, 
-  email: string, 
-  phone: string, 
-  password: string,
-  isActive: boolean = true
-): Promise<{ success: boolean; error?: any }> => {
+  userData: {
+    name: string;
+    email: string;
+    phone: string;
+    isAdmin?: boolean;
+    isActive?: boolean;
+    categories?: string[];
+  }
+): Promise<{id: string} | null> => {
   try {
-    // Check for valid email format explicitly
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
-      toast.error('Invalid email format');
-      return { success: false, error: 'Invalid email format' };
-    }
+    console.log('Creating user with data:', userData);
     
-    // Sign up the new user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          phone
-        }
+    // Create user profile using RPC function to bypass RLS
+    const { data, error: rpcError } = await supabase.rpc(
+      'create_user_profile',
+      {
+        user_id: crypto.randomUUID(), // Generate UUID for the new user
+        user_name: userData.name,
+        user_email: userData.email,
+        user_phone: userData.phone || '',
+        is_user_admin: userData.isAdmin || false
       }
-    });
+    );
     
-    if (authError) {
-      console.error('Auth error:', authError);
-      toast.error('Failed to add user', {
-        description: authError.message
-      });
-      return { success: false, error: authError };
+    if (rpcError) throw rpcError;
+    
+    // Fetch the created user to get its ID
+    const { data: newUser, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userData.email)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    // Create user preferences if categories are provided
+    if (userData.categories && userData.categories.length > 0) {
+      const { error: prefError } = await supabase
+        .from('user_preferences')
+        .insert({
+          user_id: newUser.id,
+          categories: userData.categories,
+          time_preference: 'morning', // Default value
+          is_active: userData.isActive !== undefined ? userData.isActive : true
+        });
+      
+      if (prefError) throw prefError;
     }
     
-    if (!authData.user) {
-      toast.error('Failed to create user');
-      return { success: false, error: 'No user data returned' };
-    }
-    
-    // Create the profile record using a function instead of direct insertion
-    // This is a workaround for the RLS policy issue
-    const { data: profileData, error: functionError } = await supabase.rpc('create_user_profile', {
-      user_id: authData.user.id,
-      user_name: name,
-      user_email: email,
-      user_phone: phone,
-      is_user_admin: false
-    });
-    
-    if (functionError) {
-      console.error('Profile creation error:', functionError);
-      toast.error('Error creating profile', {
-        description: functionError.message
-      });
-      return { success: false, error: functionError };
-    }
-    
-    // Create default user preferences
-    const { error: prefError } = await supabase
-      .from('user_preferences')
-      .insert({
-        user_id: authData.user.id,
-        categories: ['morning', 'confidence'],
-        time_preference: 'morning',
-        is_active: isActive,
-      });
-    
-    if (prefError) {
-      console.error('Preferences error:', prefError);
-      toast.error('Error creating user preferences', {
-        description: prefError.message
-      });
-      return { success: false, error: prefError };
-    }
-    
-    toast.success('User added successfully');
-    return { success: true };
+    toast.success('User created successfully');
+    return { id: newUser.id };
   } catch (error) {
-    console.error('Error adding user:', error);
-    toast.error('Failed to add user');
-    return { success: false, error };
+    console.error('Error creating user:', error);
+    toast.error('Failed to create user');
+    return null;
   }
 };
