@@ -34,6 +34,22 @@ export async function verifyAdminUser(jwt: string, supabase: any) {
     // Debug: Print user ID being checked
     console.log('Checking admin status for user:', user.id);
     
+    // First, check RLS permissions by trying a simple query
+    console.log('Testing database permissions on profiles table...');
+    const { data: testAccess, error: testError } = await supabase
+      .from('profiles')
+      .select('count')
+      .limit(1);
+    
+    if (testError) {
+      console.error('Database permission test failed:', testError);
+      if (testError.message.includes('permission denied')) {
+        throw new Error(`RLS permission error: The Supabase client doesn't have permission to read from the profiles table. Error: ${testError.message}`);
+      }
+    } else {
+      console.log('Database permission test passed, client can access profiles table');
+    }
+    
     // First, check if the profile exists at all with a simple query to log information
     const { data: profileExists, error: existsError } = await supabase
       .from('profiles')
