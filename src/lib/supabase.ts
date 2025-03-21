@@ -1,6 +1,7 @@
 
+import { Database } from '@/types/database.types';
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+
 
 // Use the actual values from Supabase integration instead of env variables
 const supabaseUrl = 'https://poovixtfdbtmgkiehyea.supabase.co';
