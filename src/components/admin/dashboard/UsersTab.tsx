@@ -1,77 +1,85 @@
-
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Download, UserPlus } from 'lucide-react';
-import { useAdminUsers, AdminUser } from '@/hooks/useAdminUsers';
-import { Skeleton } from '@/components/ui/skeleton';
-import AddUserModal from './AddUserModal';
-import EditUserModal from './EditUserModal';
-import DeleteUserDialog from './DeleteUserDialog';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Download, UserPlus } from "lucide-react";
+import { useAdminUsers, AdminUser } from "@/hooks/useAdminUsers";
+import { Skeleton } from "@/components/ui/skeleton";
+import AddUserModal from "./AddUserModal";
+import EditUserModal from "./EditUserModal";
+import DeleteUserDialog from "./DeleteUserDialog";
+import { toast } from "sonner";
 
 const UsersTab = () => {
-  const { users, loading, addUser, updateUser, deleteUser, exportUsers } = useAdminUsers();
-  
+  const { users, loading, addUser, updateUser, deleteUser, exportUsers } =
+    useAdminUsers();
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  
-  const handleAddUser = async (values: { 
-    name: string; 
-    email: string; 
-    phone: string; 
-    password: string;
-    isActive: boolean;
-  }) => {
-    const result = await addUser(
-      values.name, 
-      values.email, 
-      values.phone,
-      values.isActive
-    );
-    
-    if (result.success) {
-      setAddUserOpen(false);
-      toast.success('User added successfully');
-    }
-  };
-  
-  const handleEditUser = async (id: string, values: {
+
+  const handleAddUser = async (values: {
     name: string;
     email: string;
+    phone: string;
+    password: string;
     isActive: boolean;
     categories: string[];
+    isAdmin?: boolean;
   }) => {
-    console.log('Submitting user edit with values:', values);
+    console.log(values);
+    const result = await addUser(
+      values.name,
+      values.email,
+      values.phone,
+      values.isActive,
+      values.password,
+      values.categories,
+      values.isAdmin,
+    );
+
+    if (result.success) {
+      setAddUserOpen(false);
+      toast.success("User added successfully");
+    }
+  };
+
+  const handleEditUser = async (
+    id: string,
+    values: {
+      name: string;
+      email: string;
+      isActive: boolean;
+      categories: string[];
+    },
+  ) => {
+    console.log("Submitting user edit with values:", values);
     const success = await updateUser(id, values);
     if (success) {
       setEditUserOpen(false);
       setSelectedUser(null);
     }
   };
-  
+
   const handleDeleteUser = async () => {
-    console.log('Attempting to delete user:', selectedUser);
+    console.log("Attempting to delete user:", selectedUser);
     if (selectedUser) {
       try {
         const success = await deleteUser(selectedUser.id);
-        console.log('Delete result:', success);
+        console.log("Delete result:", success);
         if (success) {
           setDeleteUserOpen(false);
           setSelectedUser(null);
           toast.success(`User ${selectedUser.name} deleted successfully`);
         } else {
-          toast.error('Failed to delete user');
+          toast.error("Failed to delete user");
         }
       } catch (error) {
-        console.error('Error in delete handler:', error);
-        toast.error('An error occurred while deleting the user');
+        console.error("Error in delete handler:", error);
+        toast.error("An error occurred while deleting the user");
       }
     }
   };
-  
+
   const handleExport = () => {
     exportUsers();
   };
@@ -103,24 +111,26 @@ const UsersTab = () => {
           </div>
           <div className="divide-y">
             {loading ? (
-              Array(5).fill(null).map((_, i) => (
-                <div key={i} className="grid grid-cols-5 p-3 text-sm">
-                  <div className="col-span-2">
-                    <Skeleton className="h-4 w-24 mb-1" />
-                    <Skeleton className="h-3 w-32" />
+              Array(5)
+                .fill(null)
+                .map((_, i) => (
+                  <div key={i} className="grid grid-cols-5 p-3 text-sm">
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-24 mb-1" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Skeleton className="h-8 w-12" />
+                      <Skeleton className="h-8 w-16" />
+                    </div>
                   </div>
-                  <div>
-                    <Skeleton className="h-5 w-16" />
-                  </div>
-                  <div>
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Skeleton className="h-8 w-12" />
-                    <Skeleton className="h-8 w-16" />
-                  </div>
-                </div>
-              ))
+                ))
             ) : users.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 No users found
@@ -133,24 +143,24 @@ const UsersTab = () => {
                     <div className="text-gray-500">{user.email}</div>
                   </div>
                   <div className="flex items-center">
-                    <span 
+                    <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
+                        user.isActive
+                          ? "bg-green-100 text-green-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {user.isActive ? 'Active' : 'Inactive'}
+                      {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500">
-                      {user.categories.join(', ') || 'None'}
+                      {user.categories.join(", ") || "None"}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => {
                         setSelectedUser(user);
@@ -159,9 +169,9 @@ const UsersTab = () => {
                     >
                       Edit
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-red-500 hover:text-red-700"
                       onClick={() => {
                         setSelectedUser(user);
@@ -177,14 +187,14 @@ const UsersTab = () => {
           </div>
         </div>
       </CardContent>
-      
+
       {/* Add User Modal */}
       <AddUserModal
         open={addUserOpen}
         onOpenChange={setAddUserOpen}
         onSubmit={handleAddUser}
       />
-      
+
       {/* Edit User Modal */}
       <EditUserModal
         user={selectedUser}
@@ -192,12 +202,12 @@ const UsersTab = () => {
         onOpenChange={setEditUserOpen}
         onSubmit={handleEditUser}
       />
-      
+
       {/* Delete User Confirmation Dialog */}
       <DeleteUserDialog
         open={deleteUserOpen}
         onOpenChange={setDeleteUserOpen}
-        userName={selectedUser?.name || ''}
+        userName={selectedUser?.name || ""}
         onConfirm={handleDeleteUser}
       />
     </Card>

@@ -26,7 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AdminUser } from '@/hooks/useAdminUsers';
 
 // List of available categories matching those in CategorySelection component
-const availableCategories = [
+export const availableCategories = [
   { id: 'morning', name: 'Morning Motivation' },
   { id: 'confidence', name: 'Confidence Boosters' },
   { id: 'gratitude', name: 'Gratitude & Appreciation' },

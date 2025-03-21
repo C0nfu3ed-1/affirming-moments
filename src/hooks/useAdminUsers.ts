@@ -1,9 +1,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  fetchAllUsers, 
-  createUser, 
-  updateUserDetails, 
+import {
+  fetchAllUsers,
+  createUser,
+  updateUserDetails,
   deleteUserById,
   exportUsersToCSV
 } from '@/lib/userService';
@@ -30,21 +30,24 @@ export const useAdminUsers = () => {
     setLoading(false);
   }, []);
 
-  const addUser = async (name: string, email: string, phone: string, isActive: boolean = true) => {
+  const addUser = async (name: string, email: string, phone: string, isActive: boolean = true, password: string, categories: string[], isAdmin: boolean = false) => {
     const result = await createUser({
       name,
       email,
       phone,
-      isActive
+      isActive,
+      password,
+      categories,
+      isAdmin
     });
-    
+
     if (result) {
       await fetchUsers(); // Refresh the user list
       return { success: true };
     }
     return { success: false };
   };
-  
+
   const updateUser = async (id: string, data: {
     name?: string;
     email?: string;
@@ -57,7 +60,7 @@ export const useAdminUsers = () => {
     }
     return success;
   };
-  
+
   const deleteUser = async (id: string) => {
     const success = await deleteUserById(id);
     if (success) {
