@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-// Define the correct types for our RPC function
+// Define the correct types for our RPC function parameters
 type CreateUserProfileParams = {
   user_id: string;
   user_name: string;
@@ -25,7 +25,7 @@ export const createUser = async (
 ): Promise<{ id: string } | null> => {
   try {
     console.log('Creating user with data:', userData);
-
+    
     // 🔹 Sign up user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: userData.email,
@@ -37,7 +37,6 @@ export const createUser = async (
     const userId = authData.user?.id;
     if (!userId) throw new Error('User ID not returned after sign-up');
 
-
     // 🔹 Create user profile using Supabase RPC function
     const { data, error: profileCreateError } = await supabase.from('profiles').upsert({
       id: userId,
@@ -47,8 +46,7 @@ export const createUser = async (
       is_admin: userData.isAdmin !== undefined ? userData.isAdmin : false,
     })
     if (profileCreateError) throw profileCreateError;
-
-    // 🔹 Create user preferences if categories are provided
+    
     if (userData.categories && userData.categories.length > 0) {
       const { error: prefError } = await supabase
         .from('user_preferences')
