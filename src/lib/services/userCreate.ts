@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-// Define the correct types for our RPC function
+// Define the correct types for our RPC function parameters
 type CreateUserProfileParams = {
   user_id: string;
   user_name: string;
@@ -28,15 +28,16 @@ export const createUser = async (
     const userId = crypto.randomUUID();
     
     // Create user profile using RPC function to bypass RLS
-    // Instead of trying to specify generic types, we use type assertions to ensure
-    // TypeScript understands the parameter types correctly
-    const { data, error: rpcError } = await supabase.rpc('create_user_profile', {
-      user_id: userId,
-      user_name: userData.name,
-      user_email: userData.email,
-      user_phone: userData.phone || '',
-      is_user_admin: userData.isAdmin || false
-    } as CreateUserProfileParams);
+    const { data, error: rpcError } = await supabase.rpc(
+      'create_user_profile',
+      {
+        user_id: userId,
+        user_name: userData.name,
+        user_email: userData.email,
+        user_phone: userData.phone || '',
+        is_user_admin: userData.isAdmin || false
+      } as CreateUserProfileParams // Use type assertion to provide correct typing
+    );
     
     if (rpcError) throw rpcError;
     
